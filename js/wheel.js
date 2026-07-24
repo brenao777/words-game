@@ -92,7 +92,7 @@
     const y = e.clientY - r.top;
     this.pos = { x, y };
     const size = this.letters.length ? this.letters[0].el.offsetWidth : 60;
-    let best = -1, bestD = size * 0.62; // радиус захвата
+    let best = -1, bestD = size * 0.68; // радиус захвата: чуть больше видимого круга буквы
     this.letters.forEach((l, i) => {
       const d = Math.hypot(l.x - x, l.y - y);
       if (d < bestD) { bestD = d; best = i; }
