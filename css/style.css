@@ -47,6 +47,11 @@ button {
   touch-action: manipulation;
 }
 
+button:focus-visible {
+  outline: 2px solid var(--gold-hi);
+  outline-offset: 3px;
+}
+
 #app {
   position: relative;
   height: 100dvh;
@@ -203,11 +208,49 @@ i.coin {
   gap: 10px;
   padding-bottom: 6px;
 }
-.lvl-title {
+.lvl-meta {
   flex: 1;
+  min-width: 0;
+}
+.lvl-title {
   font-weight: 700;
-  font-size: 16px;
+  font-size: 15px;
   letter-spacing: .06em;
+}
+.lvl-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 4px;
+  transform-origin: left center;
+}
+.lvl-progress-row.bump { animation: lvl-progress-bump .38s var(--spring); }
+@keyframes lvl-progress-bump { 45% { transform: scale(1.06); } }
+.lvl-progress {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.lvl-progress-track {
+  flex: 1;
+  max-width: 68px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .08);
+}
+.lvl-progress-track i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--gold), var(--gold-hi));
+  box-shadow: 0 0 8px rgba(242, 182, 75, .45);
+  transition: width .38s var(--ease);
 }
 
 .grid-wrap {
@@ -462,6 +505,9 @@ i.coin {
   bottom: -6px;
   left: 50%;
   transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 10px;
   font-weight: 800;
   padding: 1px 7px;
@@ -469,6 +515,15 @@ i.coin {
   background: var(--bg2);
   border: 1px solid rgba(242, 182, 75, .35);
   color: var(--gold-hi);
+}
+.hint-btn .cost::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 5px rgba(242, 182, 75, .6);
 }
 
 /* ============ Оверлей победы ============ */
@@ -603,6 +658,15 @@ i.coin {
   .wheel-box { width: min(66vw, 250px); height: min(66vw, 250px); }
   .preview-row { height: 44px; }
   .home-head { padding-bottom: 6px; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .icon-btn:hover { color: var(--gold-hi); border-color: rgba(242, 182, 75, .28); }
+  .lvl:hover { transform: translateY(-2px); border-color: rgba(242, 182, 75, .28); color: var(--ink); }
+  .lvl.done:hover { color: #3a2c10; box-shadow: 0 7px 20px rgba(242, 182, 75, .3); }
+  .shuffle:hover { transform: translate(-50%, -50%) rotate(12deg); color: var(--gold-hi); }
+  .hint-btn:not(.disabled):hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(242, 182, 75, .13); }
+  .btn:hover { transform: translateY(-2px); }
 }
 
 /* Игра портретная: в низком ландшафте показываем заглушку вместо сломанной раскладки. */
