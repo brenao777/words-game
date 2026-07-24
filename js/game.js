@@ -125,13 +125,30 @@
       toast('✦ ' + shown + (list.length > 5 ? ' …' : ''), true);
     });
     $('#overlay').addEventListener('click', e => {
-      if (e.target === e.currentTarget) e.currentTarget.hidden = true; // посмотреть решённую сетку
+      if (e.target === e.currentTarget) {
+        e.currentTarget.hidden = true; // посмотреть решённую сетку
+        $('#btn-back').focus();
+      }
     });
     $('#grid').addEventListener('click', onGridTap);
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape' || $('#game').hidden) return;
+      const overlay = $('#overlay');
+      if (!overlay.hidden) {
+        overlay.hidden = true;
+        $('#btn-back').focus();
+        e.preventDefault();
+      } else if (Game.targetMode) {
+        setTargetMode(false);
+        $('#hint-target').focus();
+        e.preventDefault();
+      }
+    });
     window.addEventListener('resize', () => {
-      if (!Game.level) return;
+      if (!Game.level || $('#game').hidden) return;
       layoutGrid();
       Game.wheel.refresh();
+      if (!window.Store.state.seenIntro) maybeShowCoach();
     });
   };
 
@@ -143,6 +160,7 @@
     Game.finished = false;
     Game.targetMode = false;
     $('#hint-target').classList.remove('armed');
+    $('#hint-target').setAttribute('aria-pressed', 'false');
 
     $('#lvl-title').textContent = 'Уровень ' + (idx + 1);
     refreshCoins();
@@ -186,6 +204,7 @@
       const cell = Game.cells.get(hk);
       if (cell) openCell(cell, true, true);
     }
+    updateLevelProgress(false);
     updateBonusChip(false);
     updateHintButtons();
     renderPreview('');
@@ -251,6 +270,21 @@
 
   function allFound() { return Game.words.every(w => w.found); }
 
+  function updateLevelProgress(bumpIt) {
+    const found = Game.words.filter(w => w.found).length;
+    const total = Game.words.length;
+    const progress = $('#lvl-progress');
+    const row = progress.parentElement;
+    progress.textContent = found + ' / ' + total + ' слов';
+    progress.setAttribute('aria-label', 'Найдено ' + found + ' из ' + total + ' слов');
+    $('#lvl-progress-fill').style.width = (total ? found / total * 100 : 0) + '%';
+    if (bumpIt) {
+      row.classList.remove('bump');
+      void row.offsetWidth;
+      row.classList.add('bump');
+    }
+  }
+
   let pvTimer = null;
 
   function renderPreview(word) {
@@ -258,10 +292,12 @@
     const pv = $('#preview');
     pv.className = 'preview' + (word.length >= 7 ? ' long' : '');
     pv.innerHTML = '';
+    pv.setAttribute('aria-label', word ? 'Собрано: ' + word.toUpperCase() : 'Слово не набрано');
     for (const ch of word) {
       const t = document.createElement('div');
       t.className = 'pv-tile';
       t.textContent = ch.toUpperCase();
+      t.setAttribute('aria-hidden', 'true');
       pv.appendChild(t);
     }
     // во время набора слова прячем бонус-фишку, чтобы не наезжала на плитки
@@ -288,7 +324,11 @@
     // при системной «меньше движения» показываем только подпись, без бегающего пальца
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const hand = $('#coach-hand');
-    if (reduce) { hand.hidden = true; return; }
+    if (reduce) {
+      if (Game.coachAnim) { Game.coachAnim.cancel(); Game.coachAnim = null; }
+      hand.hidden = true;
+      return;
+    }
 
     // короткий путь по трём соседним буквам на окружности — демонстрация жеста
     const slots = [0, 1, 2].slice(0, Math.min(3, ls.length));
@@ -360,6 +400,7 @@
   function foundWord(gridWord) {
     gridWord.found = true;
     Game.saved.found.push(gridWord.w);
+    updateLevelProgress(true);
     window.Store.save();
     window.SFX.word(gridWord.w.length);
     window.HAPTIC.ok();
@@ -383,7 +424,11 @@
         extra++;
       }
     }
-    if (extra) { window.Store.save(); window.SFX.word(3); }
+    if (extra) {
+      updateLevelProgress(true);
+      window.Store.save();
+      window.SFX.word(3);
+    }
     updateHintButtons();
     if (allFound() && !Game.finished) {
       Game.finished = true;
@@ -415,6 +460,7 @@
     $('#ov-next').textContent = last ? 'К уровням' : 'Дальше';
     $('#ov-home').hidden = last;
     ov.hidden = false;
+    $('#ov-next').focus();
     // перезапуск золотой волны
     const pulse = ov.querySelector('.overlay-pulse');
     pulse.style.animation = 'none';
@@ -431,8 +477,12 @@
   function updateHintButtons() {
     const empty = closedCells().length === 0;
     const c = window.Store.state.coins;
-    $('#hint-lamp').classList.toggle('disabled', empty || c < COST_LAMP);
-    $('#hint-target').classList.toggle('disabled', empty || c < COST_TARGET);
+    const lampDisabled = empty || c < COST_LAMP;
+    const targetDisabled = empty || c < COST_TARGET;
+    $('#hint-lamp').classList.toggle('disabled', lampDisabled);
+    $('#hint-lamp').setAttribute('aria-disabled', String(lampDisabled));
+    $('#hint-target').classList.toggle('disabled', targetDisabled);
+    $('#hint-target').setAttribute('aria-disabled', String(targetDisabled));
   }
 
   function hintLamp() {
@@ -458,6 +508,7 @@
   function setTargetMode(on) {
     Game.targetMode = on;
     $('#hint-target').classList.toggle('armed', on);
+    $('#hint-target').setAttribute('aria-pressed', String(on));
     closedCells().forEach(c => c.el.classList.toggle('target-mode', on));
     if (!on) [...Game.cells.values()].forEach(c => c.el.classList.remove('target-mode'));
   }
@@ -495,6 +546,7 @@
     const n = Game.saved.bonus.length;
     chip.hidden = n === 0;
     chip.querySelector('b').textContent = n;
+    chip.setAttribute('aria-label', 'Бонусных слов: ' + n);
     if (bump) { chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump'); }
     window.Store.save();
   }

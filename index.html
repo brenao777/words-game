@@ -16,7 +16,7 @@
     <header class="home-head">
       <div class="home-top">
         <div class="coins-pill" id="home-coins"><i class="coin"></i><b>0</b></div>
-        <button class="icon-btn" id="home-sound" aria-label="Звук"></button>
+        <button class="icon-btn" id="home-sound" aria-label="Выключить звук" aria-pressed="true"></button>
       </div>
       <h1 class="logo">СЛОВО<span>КРУГ</span></h1>
       <p class="tagline">собери все слова из букв</p>
@@ -31,9 +31,15 @@
       <button class="icon-btn" id="btn-back" aria-label="Назад">
         <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <div class="lvl-title" id="lvl-title">Уровень 1</div>
+      <div class="lvl-meta">
+        <div class="lvl-title" id="lvl-title">Уровень 1</div>
+        <div class="lvl-progress-row">
+          <span class="lvl-progress" id="lvl-progress" role="status" aria-live="polite" aria-atomic="true">0 / 0 слов</span>
+          <span class="lvl-progress-track" aria-hidden="true"><i id="lvl-progress-fill"></i></span>
+        </div>
+      </div>
       <div class="coins-pill small" id="game-coins"><i class="coin"></i><b>0</b></div>
-      <button class="icon-btn" id="btn-sound" aria-label="Звук"></button>
+      <button class="icon-btn" id="btn-sound" aria-label="Выключить звук" aria-pressed="true"></button>
     </header>
 
     <div class="grid-wrap" id="grid-wrap">
@@ -41,24 +47,24 @@
     </div>
 
     <div class="preview-row">
-      <button class="bonus-chip" id="bonus-chip" hidden><span class="star">✦</span><b>0</b></button>
-      <div class="preview" id="preview"></div>
+      <button class="bonus-chip" id="bonus-chip" aria-label="Бонусных слов: 0" hidden><span class="star">✦</span><b>0</b></button>
+      <div class="preview" id="preview" role="status" aria-live="polite" aria-atomic="true" aria-label="Слово не набрано"></div>
     </div>
 
     <div class="wheel-zone">
-      <div id="coach-tip" hidden>Веди пальцем по буквам</div>
-      <button class="hint-btn" id="hint-lamp" aria-label="Подсказка: случайная буква">
+      <div id="coach-tip" role="note" aria-live="polite" aria-atomic="true" hidden>Веди пальцем по буквам</div>
+      <button class="hint-btn" id="hint-lamp" aria-label="Открыть случайную букву за 25 монет" aria-disabled="false">
         <svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.55 1.1 1.2 1.27 2.2h4.66c.17-1 .57-1.65 1.27-2.2A6 6 0 0 0 12 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 19h4M10.7 21.5h2.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span class="cost">25</span>
       </button>
       <div class="wheel-box" id="wheel-box">
         <svg id="trace"></svg>
-        <div id="coach-hand" hidden></div>
+        <div id="coach-hand" aria-hidden="true" hidden></div>
         <button class="shuffle" id="btn-shuffle" aria-label="Перемешать">
           <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 13.6-5.7M20 12a8 8 0 0 1-13.6 5.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M17.8 2.6v4h-4M6.2 21.4v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
-      <button class="hint-btn" id="hint-target" aria-label="Подсказка: буква в ячейке">
+      <button class="hint-btn" id="hint-target" aria-label="Выбрать букву для открытия за 50 монет" aria-disabled="false" aria-pressed="false">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 1.8v3.4M12 18.8v3.4M1.8 12h3.4M18.8 12h3.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span class="cost">50</span>
       </button>
@@ -66,7 +72,7 @@
   </section>
 
   <!-- ОВЕРЛЕЙ ПОБЕДЫ -->
-  <div id="overlay" hidden>
+  <div id="overlay" role="dialog" aria-modal="true" aria-labelledby="ov-title" aria-describedby="ov-stats" hidden>
     <div class="overlay-pulse"></div>
     <div class="overlay-card">
       <div class="overlay-kicker" id="ov-kicker">уровень пройден</div>
@@ -79,7 +85,7 @@
     </div>
   </div>
 
-  <div id="toast" hidden></div>
+  <div id="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
   <div class="fx-layer" id="fx"></div>
   <div id="rotate"><div><div class="ico">⟳</div>Поверните устройство<br>вертикально</div></div>
 </div>

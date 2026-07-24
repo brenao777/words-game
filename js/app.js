@@ -13,6 +13,8 @@
       const b = $(sel);
       b.innerHTML = on ? ICON_ON : ICON_OFF;
       b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', String(on));
+      b.setAttribute('aria-label', on ? 'Выключить звук' : 'Включить звук');
     });
     window.SFX.setEnabled(on);
   }
@@ -41,11 +43,17 @@
       : window.SK_LEVELS.length + ' уровней';
     const box = $('#levels');
     box.innerHTML = '';
-    window.SK_LEVELS.forEach((_, i) => {
+    window.SK_LEVELS.forEach((level, i) => {
       const st = window.Store.state.levels[i];
       const b = document.createElement('button');
       b.className = 'lvl' + (st && st.done ? ' done' : (st && st.found && st.found.length ? ' started' : ''));
       b.textContent = i + 1;
+      const stateLabel = st && st.done
+        ? 'пройден'
+        : st && st.found && st.found.length
+          ? 'найдено ' + st.found.length + ' из ' + level.w.length + ' слов'
+          : 'не начат';
+      b.setAttribute('aria-label', 'Уровень ' + (i + 1) + ', ' + stateLabel);
       b.addEventListener('click', () => {
         window.SFX.click();
         openLevel(i);
@@ -57,13 +65,17 @@
   function openLevel(i) {
     show('#game');
     window.Game.open(i);
+    $('#btn-back').focus({ preventScroll: true });
   }
 
   function goHome() {
+    const previous = window.Game.idx;
     window.Game.close(); // гасит отложенные таймеры уровня
     $('#overlay').hidden = true;
     renderHome();
     show('#home');
+    const levelButton = $('#levels').children[previous];
+    if (levelButton) levelButton.focus({ preventScroll: true });
   }
 
   function init() {

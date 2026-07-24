@@ -56,6 +56,11 @@ button {
   touch-action: manipulation;
 }
 
+button:focus-visible {
+  outline: 2px solid var(--gold-hi);
+  outline-offset: 3px;
+}
+
 #app {
   position: relative;
   height: 100dvh;
@@ -212,11 +217,49 @@ i.coin {
   gap: 10px;
   padding-bottom: 6px;
 }
-.lvl-title {
+.lvl-meta {
   flex: 1;
+  min-width: 0;
+}
+.lvl-title {
   font-weight: 700;
-  font-size: 16px;
+  font-size: 15px;
   letter-spacing: .06em;
+}
+.lvl-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 4px;
+  transform-origin: left center;
+}
+.lvl-progress-row.bump { animation: lvl-progress-bump .38s var(--spring); }
+@keyframes lvl-progress-bump { 45% { transform: scale(1.06); } }
+.lvl-progress {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.lvl-progress-track {
+  flex: 1;
+  max-width: 68px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .08);
+}
+.lvl-progress-track i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--gold), var(--gold-hi));
+  box-shadow: 0 0 8px rgba(242, 182, 75, .45);
+  transition: width .38s var(--ease);
 }
 
 .grid-wrap {
@@ -471,6 +514,9 @@ i.coin {
   bottom: -6px;
   left: 50%;
   transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 10px;
   font-weight: 800;
   padding: 1px 7px;
@@ -478,6 +524,15 @@ i.coin {
   background: var(--bg2);
   border: 1px solid rgba(242, 182, 75, .35);
   color: var(--gold-hi);
+}
+.hint-btn .cost::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 5px rgba(242, 182, 75, .6);
 }
 
 /* ============ Оверлей победы ============ */
@@ -614,6 +669,15 @@ i.coin {
   .home-head { padding-bottom: 6px; }
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .icon-btn:hover { color: var(--gold-hi); border-color: rgba(242, 182, 75, .28); }
+  .lvl:hover { transform: translateY(-2px); border-color: rgba(242, 182, 75, .28); color: var(--ink); }
+  .lvl.done:hover { color: #3a2c10; box-shadow: 0 7px 20px rgba(242, 182, 75, .3); }
+  .shuffle:hover { transform: translate(-50%, -50%) rotate(12deg); color: var(--gold-hi); }
+  .hint-btn:not(.disabled):hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(242, 182, 75, .13); }
+  .btn:hover { transform: translateY(-2px); }
+}
+
 /* Игра портретная: в низком ландшафте показываем заглушку вместо сломанной раскладки. */
 #rotate {
   position: absolute;
@@ -653,7 +717,7 @@ i.coin {
     <header class="home-head">
       <div class="home-top">
         <div class="coins-pill" id="home-coins"><i class="coin"></i><b>0</b></div>
-        <button class="icon-btn" id="home-sound" aria-label="Звук"></button>
+        <button class="icon-btn" id="home-sound" aria-label="Выключить звук" aria-pressed="true"></button>
       </div>
       <h1 class="logo">СЛОВО<span>КРУГ</span></h1>
       <p class="tagline">собери все слова из букв</p>
@@ -668,9 +732,15 @@ i.coin {
       <button class="icon-btn" id="btn-back" aria-label="Назад">
         <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <div class="lvl-title" id="lvl-title">Уровень 1</div>
+      <div class="lvl-meta">
+        <div class="lvl-title" id="lvl-title">Уровень 1</div>
+        <div class="lvl-progress-row">
+          <span class="lvl-progress" id="lvl-progress" role="status" aria-live="polite" aria-atomic="true">0 / 0 слов</span>
+          <span class="lvl-progress-track" aria-hidden="true"><i id="lvl-progress-fill"></i></span>
+        </div>
+      </div>
       <div class="coins-pill small" id="game-coins"><i class="coin"></i><b>0</b></div>
-      <button class="icon-btn" id="btn-sound" aria-label="Звук"></button>
+      <button class="icon-btn" id="btn-sound" aria-label="Выключить звук" aria-pressed="true"></button>
     </header>
 
     <div class="grid-wrap" id="grid-wrap">
@@ -678,24 +748,24 @@ i.coin {
     </div>
 
     <div class="preview-row">
-      <button class="bonus-chip" id="bonus-chip" hidden><span class="star">✦</span><b>0</b></button>
-      <div class="preview" id="preview"></div>
+      <button class="bonus-chip" id="bonus-chip" aria-label="Бонусных слов: 0" hidden><span class="star">✦</span><b>0</b></button>
+      <div class="preview" id="preview" role="status" aria-live="polite" aria-atomic="true" aria-label="Слово не набрано"></div>
     </div>
 
     <div class="wheel-zone">
-      <div id="coach-tip" hidden>Веди пальцем по буквам</div>
-      <button class="hint-btn" id="hint-lamp" aria-label="Подсказка: случайная буква">
+      <div id="coach-tip" role="note" aria-live="polite" aria-atomic="true" hidden>Веди пальцем по буквам</div>
+      <button class="hint-btn" id="hint-lamp" aria-label="Открыть случайную букву за 25 монет" aria-disabled="false">
         <svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.55 1.1 1.2 1.27 2.2h4.66c.17-1 .57-1.65 1.27-2.2A6 6 0 0 0 12 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 19h4M10.7 21.5h2.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span class="cost">25</span>
       </button>
       <div class="wheel-box" id="wheel-box">
         <svg id="trace"></svg>
-        <div id="coach-hand" hidden></div>
+        <div id="coach-hand" aria-hidden="true" hidden></div>
         <button class="shuffle" id="btn-shuffle" aria-label="Перемешать">
           <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 13.6-5.7M20 12a8 8 0 0 1-13.6 5.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M17.8 2.6v4h-4M6.2 21.4v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
-      <button class="hint-btn" id="hint-target" aria-label="Подсказка: буква в ячейке">
+      <button class="hint-btn" id="hint-target" aria-label="Выбрать букву для открытия за 50 монет" aria-disabled="false" aria-pressed="false">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 1.8v3.4M12 18.8v3.4M1.8 12h3.4M18.8 12h3.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span class="cost">50</span>
       </button>
@@ -703,7 +773,7 @@ i.coin {
   </section>
 
   <!-- ОВЕРЛЕЙ ПОБЕДЫ -->
-  <div id="overlay" hidden>
+  <div id="overlay" role="dialog" aria-modal="true" aria-labelledby="ov-title" aria-describedby="ov-stats" hidden>
     <div class="overlay-pulse"></div>
     <div class="overlay-card">
       <div class="overlay-kicker" id="ov-kicker">уровень пройден</div>
@@ -716,7 +786,7 @@ i.coin {
     </div>
   </div>
 
-  <div id="toast" hidden></div>
+  <div id="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
   <div class="fx-layer" id="fx"></div>
   <div id="rotate"><div><div class="ico">⟳</div>Поверните устройство<br>вертикально</div></div>
 </div>
@@ -1349,13 +1419,30 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
       toast('✦ ' + shown + (list.length > 5 ? ' …' : ''), true);
     });
     $('#overlay').addEventListener('click', e => {
-      if (e.target === e.currentTarget) e.currentTarget.hidden = true; // посмотреть решённую сетку
+      if (e.target === e.currentTarget) {
+        e.currentTarget.hidden = true; // посмотреть решённую сетку
+        $('#btn-back').focus();
+      }
     });
     $('#grid').addEventListener('click', onGridTap);
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape' || $('#game').hidden) return;
+      const overlay = $('#overlay');
+      if (!overlay.hidden) {
+        overlay.hidden = true;
+        $('#btn-back').focus();
+        e.preventDefault();
+      } else if (Game.targetMode) {
+        setTargetMode(false);
+        $('#hint-target').focus();
+        e.preventDefault();
+      }
+    });
     window.addEventListener('resize', () => {
-      if (!Game.level) return;
+      if (!Game.level || $('#game').hidden) return;
       layoutGrid();
       Game.wheel.refresh();
+      if (!window.Store.state.seenIntro) maybeShowCoach();
     });
   };
 
@@ -1367,6 +1454,7 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
     Game.finished = false;
     Game.targetMode = false;
     $('#hint-target').classList.remove('armed');
+    $('#hint-target').setAttribute('aria-pressed', 'false');
 
     $('#lvl-title').textContent = 'Уровень ' + (idx + 1);
     refreshCoins();
@@ -1410,6 +1498,7 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
       const cell = Game.cells.get(hk);
       if (cell) openCell(cell, true, true);
     }
+    updateLevelProgress(false);
     updateBonusChip(false);
     updateHintButtons();
     renderPreview('');
@@ -1475,6 +1564,21 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
 
   function allFound() { return Game.words.every(w => w.found); }
 
+  function updateLevelProgress(bumpIt) {
+    const found = Game.words.filter(w => w.found).length;
+    const total = Game.words.length;
+    const progress = $('#lvl-progress');
+    const row = progress.parentElement;
+    progress.textContent = found + ' / ' + total + ' слов';
+    progress.setAttribute('aria-label', 'Найдено ' + found + ' из ' + total + ' слов');
+    $('#lvl-progress-fill').style.width = (total ? found / total * 100 : 0) + '%';
+    if (bumpIt) {
+      row.classList.remove('bump');
+      void row.offsetWidth;
+      row.classList.add('bump');
+    }
+  }
+
   let pvTimer = null;
 
   function renderPreview(word) {
@@ -1482,10 +1586,12 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
     const pv = $('#preview');
     pv.className = 'preview' + (word.length >= 7 ? ' long' : '');
     pv.innerHTML = '';
+    pv.setAttribute('aria-label', word ? 'Собрано: ' + word.toUpperCase() : 'Слово не набрано');
     for (const ch of word) {
       const t = document.createElement('div');
       t.className = 'pv-tile';
       t.textContent = ch.toUpperCase();
+      t.setAttribute('aria-hidden', 'true');
       pv.appendChild(t);
     }
     // во время набора слова прячем бонус-фишку, чтобы не наезжала на плитки
@@ -1512,7 +1618,11 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
     // при системной «меньше движения» показываем только подпись, без бегающего пальца
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const hand = $('#coach-hand');
-    if (reduce) { hand.hidden = true; return; }
+    if (reduce) {
+      if (Game.coachAnim) { Game.coachAnim.cancel(); Game.coachAnim = null; }
+      hand.hidden = true;
+      return;
+    }
 
     // короткий путь по трём соседним буквам на окружности — демонстрация жеста
     const slots = [0, 1, 2].slice(0, Math.min(3, ls.length));
@@ -1584,6 +1694,7 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
   function foundWord(gridWord) {
     gridWord.found = true;
     Game.saved.found.push(gridWord.w);
+    updateLevelProgress(true);
     window.Store.save();
     window.SFX.word(gridWord.w.length);
     window.HAPTIC.ok();
@@ -1607,7 +1718,11 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
         extra++;
       }
     }
-    if (extra) { window.Store.save(); window.SFX.word(3); }
+    if (extra) {
+      updateLevelProgress(true);
+      window.Store.save();
+      window.SFX.word(3);
+    }
     updateHintButtons();
     if (allFound() && !Game.finished) {
       Game.finished = true;
@@ -1639,6 +1754,7 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
     $('#ov-next').textContent = last ? 'К уровням' : 'Дальше';
     $('#ov-home').hidden = last;
     ov.hidden = false;
+    $('#ov-next').focus();
     // перезапуск золотой волны
     const pulse = ov.querySelector('.overlay-pulse');
     pulse.style.animation = 'none';
@@ -1655,8 +1771,12 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
   function updateHintButtons() {
     const empty = closedCells().length === 0;
     const c = window.Store.state.coins;
-    $('#hint-lamp').classList.toggle('disabled', empty || c < COST_LAMP);
-    $('#hint-target').classList.toggle('disabled', empty || c < COST_TARGET);
+    const lampDisabled = empty || c < COST_LAMP;
+    const targetDisabled = empty || c < COST_TARGET;
+    $('#hint-lamp').classList.toggle('disabled', lampDisabled);
+    $('#hint-lamp').setAttribute('aria-disabled', String(lampDisabled));
+    $('#hint-target').classList.toggle('disabled', targetDisabled);
+    $('#hint-target').setAttribute('aria-disabled', String(targetDisabled));
   }
 
   function hintLamp() {
@@ -1682,6 +1802,7 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
   function setTargetMode(on) {
     Game.targetMode = on;
     $('#hint-target').classList.toggle('armed', on);
+    $('#hint-target').setAttribute('aria-pressed', String(on));
     closedCells().forEach(c => c.el.classList.toggle('target-mode', on));
     if (!on) [...Game.cells.values()].forEach(c => c.el.classList.remove('target-mode'));
   }
@@ -1719,6 +1840,7 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
     const n = Game.saved.bonus.length;
     chip.hidden = n === 0;
     chip.querySelector('b').textContent = n;
+    chip.setAttribute('aria-label', 'Бонусных слов: ' + n);
     if (bump) { chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump'); }
     window.Store.save();
   }
@@ -1742,6 +1864,8 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
       const b = $(sel);
       b.innerHTML = on ? ICON_ON : ICON_OFF;
       b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', String(on));
+      b.setAttribute('aria-label', on ? 'Выключить звук' : 'Включить звук');
     });
     window.SFX.setEnabled(on);
   }
@@ -1770,11 +1894,17 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
       : window.SK_LEVELS.length + ' уровней';
     const box = $('#levels');
     box.innerHTML = '';
-    window.SK_LEVELS.forEach((_, i) => {
+    window.SK_LEVELS.forEach((level, i) => {
       const st = window.Store.state.levels[i];
       const b = document.createElement('button');
       b.className = 'lvl' + (st && st.done ? ' done' : (st && st.found && st.found.length ? ' started' : ''));
       b.textContent = i + 1;
+      const stateLabel = st && st.done
+        ? 'пройден'
+        : st && st.found && st.found.length
+          ? 'найдено ' + st.found.length + ' из ' + level.w.length + ' слов'
+          : 'не начат';
+      b.setAttribute('aria-label', 'Уровень ' + (i + 1) + ', ' + stateLabel);
       b.addEventListener('click', () => {
         window.SFX.click();
         openLevel(i);
@@ -1786,13 +1916,17 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
   function openLevel(i) {
     show('#game');
     window.Game.open(i);
+    $('#btn-back').focus({ preventScroll: true });
   }
 
   function goHome() {
+    const previous = window.Game.idx;
     window.Game.close(); // гасит отложенные таймеры уровня
     $('#overlay').hidden = true;
     renderHome();
     show('#home');
+    const levelButton = $('#levels').children[previous];
+    if (levelButton) levelButton.focus({ preventScroll: true });
   }
 
   function init() {
