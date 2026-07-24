@@ -64,6 +64,7 @@
 
   const Game = {
     idx: 0,
+    gen: 0,             // поколение уровня: инвалидирует отложенные таймеры при смене уровня
     level: null,
     saved: null,
     cells: new Map(),   // "x,y" -> { x, y, ch, el, open }
@@ -75,6 +76,12 @@
   };
 
   function key(x, y) { return x + ',' + y; }
+
+  /* setTimeout, который молча не срабатывает, если уровень уже сменился. */
+  function later(fn, ms) {
+    const g = Game.gen;
+    return setTimeout(() => { if (g === Game.gen) fn(); }, ms);
+  }
 
   function counts(word) {
     const m = {};
@@ -117,6 +124,7 @@
     $('#overlay').addEventListener('click', e => {
       if (e.target === e.currentTarget) e.currentTarget.hidden = true; // посмотреть решённую сетку
     });
+    $('#grid').addEventListener('click', onGridTap);
     window.addEventListener('resize', () => {
       if (!Game.level) return;
       layoutGrid();
@@ -125,6 +133,7 @@
   };
 
   Game.open = function (idx) {
+    Game.gen++;
     Game.idx = idx;
     Game.level = window.SK_LEVELS[idx];
     Game.saved = window.Store.level(idx);
@@ -150,7 +159,6 @@
         if (!cell) {
           const el = document.createElement('div');
           el.className = 'cell';
-          el.addEventListener('click', () => onCellTap(cell));
           grid.appendChild(el);
           cell = { x: cx, y: cy, ch: w[i], el, open: false };
           Game.cells.set(k, cell);
@@ -166,10 +174,14 @@
     Game.wheelCounts = counts(Game.level.l.join(''));
     Game.wheel.setLetters(Game.level.l);
 
-    // восстановление прогресса
+    // восстановление прогресса: найденные слова и купленные подсказкой буквы
     for (const fw of Game.saved.found) {
       const word = Game.words.find(x => x.w === fw && !x.found);
       if (word) { word.found = true; word.cells.forEach(c => openCell(c, true)); }
+    }
+    for (const hk of Game.saved.hinted) {
+      const cell = Game.cells.get(hk);
+      if (cell) openCell(cell, true, true);
     }
     updateBonusChip(false);
     updateHintButtons();
@@ -177,8 +189,14 @@
 
     if (Game.saved.done && allFound()) {
       // пройденный уровень: показываем решённую сетку и сразу оверлей
-      setTimeout(() => showOverlay(true), 350);
+      later(() => showOverlay(true), 350);
     }
+  };
+
+  /* Выход с игрового экрана: гасим все отложенные таймеры уровня. */
+  Game.close = function () {
+    Game.gen++;
+    setTargetMode(false);
   };
 
   function layoutGrid() {
@@ -191,11 +209,11 @@
     const gap = 4;
     const availW = wrap.clientWidth - 8;
     const availH = wrap.clientHeight - 8;
-    const cell = Math.min(
+    const cell = Math.max(14, Math.min(
       cols <= 5 && rows <= 5 ? 58 : 52,
       Math.floor((availW - (cols - 1) * gap) / cols),
       Math.floor((availH - (rows - 1) * gap) / rows)
-    );
+    ));
     grid.style.setProperty('--cell', cell + 'px');
     grid.style.width = (cols * cell + (cols - 1) * gap) + 'px';
     grid.style.height = (rows * cell + (rows - 1) * gap) + 'px';
@@ -227,9 +245,12 @@
 
   function allFound() { return Game.words.every(w => w.found); }
 
+  let pvTimer = null;
+
   function renderPreview(word) {
+    clearTimeout(pvTimer);
     const pv = $('#preview');
-    pv.className = 'preview';
+    pv.className = 'preview' + (word.length >= 7 ? ' long' : '');
     pv.innerHTML = '';
     for (const ch of word) {
       const t = document.createElement('div');
@@ -237,12 +258,15 @@
       t.textContent = ch.toUpperCase();
       pv.appendChild(t);
     }
+    // во время набора слова прячем бонус-фишку, чтобы не наезжала на плитки
+    $('#bonus-chip').classList.toggle('faded', word.length > 0);
   }
 
   function previewOut(cls) {
     const pv = $('#preview');
     pv.classList.add(cls);
-    setTimeout(() => renderPreview(''), cls === 'shake' ? 420 : 320);
+    clearTimeout(pvTimer);
+    pvTimer = setTimeout(() => renderPreview(''), cls === 'shake' ? 420 : 320);
   }
 
   /* ---------- проверка собранного слова ---------- */
@@ -300,7 +324,7 @@
       }, i * 45);
     });
     // открытая буква могла достроить другие слова
-    setTimeout(() => checkAutoComplete(), gridWord.cells.length * 45 + 60);
+    later(() => checkAutoComplete(), gridWord.cells.length * 45 + 60);
   }
 
   /* Слова, у которых открылись все клетки (через пересечения или подсказки), считаются найденными. */
@@ -318,7 +342,7 @@
     updateHintButtons();
     if (allFound() && !Game.finished) {
       Game.finished = true;
-      setTimeout(levelComplete, 650);
+      later(levelComplete, 650);
     }
   }
 
@@ -393,19 +417,32 @@
     if (!on) [...Game.cells.values()].forEach(c => c.el.classList.remove('target-mode'));
   }
 
-  function onCellTap(cell) {
-    if (!Game.targetMode || cell.open) return;
+  /* Тап по сетке в режиме «мишень»: берём ближайшую закрытую клетку,
+   * чтобы промах в 4-пиксельный зазор не открывал соседнюю. */
+  function onGridTap(e) {
+    if (!Game.targetMode) return;
+    let best = null, bestD = Infinity;
+    for (const c of closedCells()) {
+      const r = c.el.getBoundingClientRect();
+      const d = Math.hypot(r.left + r.width / 2 - e.clientX, r.top + r.height / 2 - e.clientY);
+      if (d < bestD) { bestD = d; best = c; }
+    }
+    if (!best) return;
+    const size = best.el.offsetWidth || 40;
+    if (bestD > size * 1.1) return; // слишком далеко — не считаем выбором
     if (window.Store.state.coins < COST_TARGET) { setTargetMode(false); toast('Недостаточно монет'); return; }
     window.Store.addCoins(-COST_TARGET);
     refreshCoins(true);
     setTargetMode(false);
-    revealHint(cell);
+    revealHint(best);
   }
 
   function revealHint(cell) {
     window.SFX.hint();
     openCell(cell, false, true);
-    setTimeout(() => checkAutoComplete(), 350);
+    Game.saved.hinted.push(key(cell.x, cell.y));
+    window.Store.save();
+    later(() => checkAutoComplete(), 350);
   }
 
   function updateBonusChip(bump) {

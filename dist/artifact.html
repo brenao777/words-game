@@ -289,6 +289,13 @@ i.coin {
   from { transform: scale(.4) translateY(8px); opacity: 0; }
 }
 
+.preview.long .pv-tile {
+  width: 29px;
+  height: 33px;
+  font-size: 17px;
+  border-radius: 8px;
+}
+
 .preview.shake { animation: shake .4s var(--ease); }
 @keyframes shake {
   20% { transform: translateX(-8px); }
@@ -323,6 +330,8 @@ i.coin {
 }
 .bonus-chip .star { color: var(--gold); font-size: 12px; }
 .bonus-chip.bump { animation: bump .4s var(--spring); }
+.bonus-chip { transition: opacity .2s; }
+.bonus-chip.faded { opacity: 0; pointer-events: none; }
 
 /* ---- колесо ---- */
 
@@ -561,6 +570,24 @@ i.coin {
   .preview-row { height: 44px; }
   .home-head { padding-bottom: 6px; }
 }
+
+/* Игра портретная: в низком ландшафте показываем заглушку вместо сломанной раскладки. */
+#rotate {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  place-items: center;
+  text-align: center;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 15px;
+  letter-spacing: .05em;
+}
+#rotate .ico { font-size: 44px; color: var(--gold); margin-bottom: 12px; }
+@media (orientation: landscape) and (max-height: 520px) {
+  #rotate { display: grid !important; }
+}
 </style>
 <div id="app">
 
@@ -632,6 +659,7 @@ i.coin {
 
   <div id="toast" hidden></div>
   <div class="fx-layer" id="fx"></div>
+  <div id="rotate"><div><div class="ico">⟳</div>Поверните устройство<br>вертикально</div></div>
 </div>
 
 <script>
@@ -715,7 +743,7 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
       master.connect(comp);
       comp.connect(ctx.destination);
     }
-    if (ctx.state === 'suspended') ctx.resume();
+    if (ctx.state !== 'running') ctx.resume(); // suspended и iOS-состояние interrupted
     return true;
   }
 
@@ -774,7 +802,8 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
 
   const SFX = {
     get enabled() { return enabled; },
-    setEnabled(v) { enabled = !!v; if (v) ensure(); },
+    // контекст НЕ создаётся здесь: только по жесту пользователя (unlock/play)
+    setEnabled(v) { enabled = !!v; },
     unlock() { if (enabled) ensure(); },
 
     pick(i) {
@@ -900,7 +929,8 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
 
   function level(idx) {
     const s = load();
-    if (!s.levels[idx]) s.levels[idx] = { found: [], bonus: [], done: false };
+    if (!s.levels[idx]) s.levels[idx] = { found: [], bonus: [], hinted: [], done: false };
+    if (!s.levels[idx].hinted) s.levels[idx].hinted = []; // миграция старых сохранений
     return s.levels[idx];
   }
 
@@ -1151,6 +1181,7 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
 
   const Game = {
     idx: 0,
+    gen: 0,             // поколение уровня: инвалидирует отложенные таймеры при смене уровня
     level: null,
     saved: null,
     cells: new Map(),   // "x,y" -> { x, y, ch, el, open }
@@ -1162,6 +1193,12 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
   };
 
   function key(x, y) { return x + ',' + y; }
+
+  /* setTimeout, который молча не срабатывает, если уровень уже сменился. */
+  function later(fn, ms) {
+    const g = Game.gen;
+    return setTimeout(() => { if (g === Game.gen) fn(); }, ms);
+  }
 
   function counts(word) {
     const m = {};
@@ -1204,6 +1241,7 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
     $('#overlay').addEventListener('click', e => {
       if (e.target === e.currentTarget) e.currentTarget.hidden = true; // посмотреть решённую сетку
     });
+    $('#grid').addEventListener('click', onGridTap);
     window.addEventListener('resize', () => {
       if (!Game.level) return;
       layoutGrid();
@@ -1212,6 +1250,7 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
   };
 
   Game.open = function (idx) {
+    Game.gen++;
     Game.idx = idx;
     Game.level = window.SK_LEVELS[idx];
     Game.saved = window.Store.level(idx);
@@ -1237,7 +1276,6 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
         if (!cell) {
           const el = document.createElement('div');
           el.className = 'cell';
-          el.addEventListener('click', () => onCellTap(cell));
           grid.appendChild(el);
           cell = { x: cx, y: cy, ch: w[i], el, open: false };
           Game.cells.set(k, cell);
@@ -1253,10 +1291,14 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
     Game.wheelCounts = counts(Game.level.l.join(''));
     Game.wheel.setLetters(Game.level.l);
 
-    // восстановление прогресса
+    // восстановление прогресса: найденные слова и купленные подсказкой буквы
     for (const fw of Game.saved.found) {
       const word = Game.words.find(x => x.w === fw && !x.found);
       if (word) { word.found = true; word.cells.forEach(c => openCell(c, true)); }
+    }
+    for (const hk of Game.saved.hinted) {
+      const cell = Game.cells.get(hk);
+      if (cell) openCell(cell, true, true);
     }
     updateBonusChip(false);
     updateHintButtons();
@@ -1264,8 +1306,14 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
 
     if (Game.saved.done && allFound()) {
       // пройденный уровень: показываем решённую сетку и сразу оверлей
-      setTimeout(() => showOverlay(true), 350);
+      later(() => showOverlay(true), 350);
     }
+  };
+
+  /* Выход с игрового экрана: гасим все отложенные таймеры уровня. */
+  Game.close = function () {
+    Game.gen++;
+    setTargetMode(false);
   };
 
   function layoutGrid() {
@@ -1278,11 +1326,11 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
     const gap = 4;
     const availW = wrap.clientWidth - 8;
     const availH = wrap.clientHeight - 8;
-    const cell = Math.min(
+    const cell = Math.max(14, Math.min(
       cols <= 5 && rows <= 5 ? 58 : 52,
       Math.floor((availW - (cols - 1) * gap) / cols),
       Math.floor((availH - (rows - 1) * gap) / rows)
-    );
+    ));
     grid.style.setProperty('--cell', cell + 'px');
     grid.style.width = (cols * cell + (cols - 1) * gap) + 'px';
     grid.style.height = (rows * cell + (rows - 1) * gap) + 'px';
@@ -1314,9 +1362,12 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
 
   function allFound() { return Game.words.every(w => w.found); }
 
+  let pvTimer = null;
+
   function renderPreview(word) {
+    clearTimeout(pvTimer);
     const pv = $('#preview');
-    pv.className = 'preview';
+    pv.className = 'preview' + (word.length >= 7 ? ' long' : '');
     pv.innerHTML = '';
     for (const ch of word) {
       const t = document.createElement('div');
@@ -1324,12 +1375,15 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
       t.textContent = ch.toUpperCase();
       pv.appendChild(t);
     }
+    // во время набора слова прячем бонус-фишку, чтобы не наезжала на плитки
+    $('#bonus-chip').classList.toggle('faded', word.length > 0);
   }
 
   function previewOut(cls) {
     const pv = $('#preview');
     pv.classList.add(cls);
-    setTimeout(() => renderPreview(''), cls === 'shake' ? 420 : 320);
+    clearTimeout(pvTimer);
+    pvTimer = setTimeout(() => renderPreview(''), cls === 'shake' ? 420 : 320);
   }
 
   /* ---------- проверка собранного слова ---------- */
@@ -1387,7 +1441,7 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
       }, i * 45);
     });
     // открытая буква могла достроить другие слова
-    setTimeout(() => checkAutoComplete(), gridWord.cells.length * 45 + 60);
+    later(() => checkAutoComplete(), gridWord.cells.length * 45 + 60);
   }
 
   /* Слова, у которых открылись все клетки (через пересечения или подсказки), считаются найденными. */
@@ -1405,7 +1459,7 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
     updateHintButtons();
     if (allFound() && !Game.finished) {
       Game.finished = true;
-      setTimeout(levelComplete, 650);
+      later(levelComplete, 650);
     }
   }
 
@@ -1480,19 +1534,32 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
     if (!on) [...Game.cells.values()].forEach(c => c.el.classList.remove('target-mode'));
   }
 
-  function onCellTap(cell) {
-    if (!Game.targetMode || cell.open) return;
+  /* Тап по сетке в режиме «мишень»: берём ближайшую закрытую клетку,
+   * чтобы промах в 4-пиксельный зазор не открывал соседнюю. */
+  function onGridTap(e) {
+    if (!Game.targetMode) return;
+    let best = null, bestD = Infinity;
+    for (const c of closedCells()) {
+      const r = c.el.getBoundingClientRect();
+      const d = Math.hypot(r.left + r.width / 2 - e.clientX, r.top + r.height / 2 - e.clientY);
+      if (d < bestD) { bestD = d; best = c; }
+    }
+    if (!best) return;
+    const size = best.el.offsetWidth || 40;
+    if (bestD > size * 1.1) return; // слишком далеко — не считаем выбором
     if (window.Store.state.coins < COST_TARGET) { setTargetMode(false); toast('Недостаточно монет'); return; }
     window.Store.addCoins(-COST_TARGET);
     refreshCoins(true);
     setTargetMode(false);
-    revealHint(cell);
+    revealHint(best);
   }
 
   function revealHint(cell) {
     window.SFX.hint();
     openCell(cell, false, true);
-    setTimeout(() => checkAutoComplete(), 350);
+    Game.saved.hinted.push(key(cell.x, cell.y));
+    window.Store.save();
+    later(() => checkAutoComplete(), 350);
   }
 
   function updateBonusChip(bump) {
@@ -1570,6 +1637,7 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
   }
 
   function goHome() {
+    window.Game.close(); // гасит отложенные таймеры уровня
     $('#overlay').hidden = true;
     renderHome();
     show('#home');
@@ -1593,9 +1661,11 @@ window.SK_DICT = new Set("абзац абрикос авария автобус 
       else goHome();
     });
 
-    // разблокировка аудио первым касанием
+    // разблокировка/возобновление аудио жестами (включая iOS-состояние interrupted)
     const unlock = () => window.SFX.unlock();
-    document.addEventListener('pointerdown', unlock, { once: false });
+    document.addEventListener('pointerdown', unlock);
+    document.addEventListener('touchend', unlock);
+    document.addEventListener('click', unlock);
 
     // никакого скролла, зума и контекстных меню
     document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });

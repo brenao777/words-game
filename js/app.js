@@ -60,6 +60,7 @@
   }
 
   function goHome() {
+    window.Game.close(); // гасит отложенные таймеры уровня
     $('#overlay').hidden = true;
     renderHome();
     show('#home');
@@ -83,9 +84,11 @@
       else goHome();
     });
 
-    // разблокировка аудио первым касанием
+    // разблокировка/возобновление аудио жестами (включая iOS-состояние interrupted)
     const unlock = () => window.SFX.unlock();
-    document.addEventListener('pointerdown', unlock, { once: false });
+    document.addEventListener('pointerdown', unlock);
+    document.addEventListener('touchend', unlock);
+    document.addEventListener('click', unlock);
 
     // никакого скролла, зума и контекстных меню
     document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });

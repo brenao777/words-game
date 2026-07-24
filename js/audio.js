@@ -19,7 +19,7 @@
       master.connect(comp);
       comp.connect(ctx.destination);
     }
-    if (ctx.state === 'suspended') ctx.resume();
+    if (ctx.state !== 'running') ctx.resume(); // suspended и iOS-состояние interrupted
     return true;
   }
 
@@ -78,7 +78,8 @@
 
   const SFX = {
     get enabled() { return enabled; },
-    setEnabled(v) { enabled = !!v; if (v) ensure(); },
+    // контекст НЕ создаётся здесь: только по жесту пользователя (unlock/play)
+    setEnabled(v) { enabled = !!v; },
     unlock() { if (enabled) ensure(); },
 
     pick(i) {

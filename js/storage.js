@@ -30,7 +30,8 @@
 
   function level(idx) {
     const s = load();
-    if (!s.levels[idx]) s.levels[idx] = { found: [], bonus: [], done: false };
+    if (!s.levels[idx]) s.levels[idx] = { found: [], bonus: [], hinted: [], done: false };
+    if (!s.levels[idx].hinted) s.levels[idx].hinted = []; // миграция старых сохранений
     return s.levels[idx];
   }
 
