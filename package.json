@@ -1,0 +1,10 @@
+{
+  "name": "slovokrug",
+  "version": "1.0.0",
+  "description": "Словокруг — офлайн игра-кроссворд с колесом букв",
+  "private": true,
+  "scripts": {
+    "generate": "node tools/generate.js",
+    "build": "node tools/build.js"
+  }
+}
