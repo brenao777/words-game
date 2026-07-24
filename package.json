@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "generate": "node tools/generate.js",
-    "build": "node tools/build.js"
+    "build": "node tools/build.js",
+    "test": "node --test"
   }
 }

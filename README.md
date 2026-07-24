@@ -31,6 +31,7 @@ python3 -m http.server 8000
 ```bash
 node tools/generate.js   # перегенерировать 50 уровней из словаря + валидация
 node tools/build.js      # собрать одностраничный dist/slovokrug.html
+npm test                # запустить автоматические тесты
 ```
 
 Словарь — `tools/dictionary.ru.js` (общеизвестные существительные,
