@@ -38,6 +38,7 @@ test('uses fresh defaults when there is no save', () => {
   assert.deepEqual(snapshot(Store.state), {
     coins: 100,
     sound: true,
+    seenIntro: false,
     levels: {},
   });
 });
@@ -60,6 +61,7 @@ test('rejects malformed root fields', () => {
   assert.deepEqual(snapshot(Store.state), {
     coins: 100,
     sound: true,
+    seenIntro: false,
     levels: {},
   });
 });
@@ -82,6 +84,7 @@ test('normalizes malformed level values', () => {
   assert.deepEqual(snapshot(Store.state), {
     coins: 42,
     sound: false,
+    seenIntro: false,
     levels: {
       0: {
         found: ['кот'],
@@ -91,6 +94,17 @@ test('normalizes malformed level values', () => {
       },
     },
   });
+});
+
+test('seenIntro persists only for a strict true, garbage falls back to false', () => {
+  assert.equal(createStore(JSON.stringify({ seenIntro: true })).Store.state.seenIntro, true);
+  assert.equal(createStore(JSON.stringify({ seenIntro: 'yes' })).Store.state.seenIntro, false);
+  assert.equal(createStore(JSON.stringify({ seenIntro: 1 })).Store.state.seenIntro, false);
+
+  const { Store } = createStore(null);
+  assert.equal(Store.state.seenIntro, false);
+  Store.setIntroSeen();
+  assert.equal(Store.state.seenIntro, true);
 });
 
 test('migrates old level saves with missing fields', () => {

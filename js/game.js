@@ -73,6 +73,7 @@
     wheel: null,
     targetMode: false,
     finished: false,
+    coachAnim: null,   // анимация обучающего «пальца» (первый запуск)
   };
 
   function key(x, y) { return x + ',' + y; }
@@ -98,6 +99,7 @@
   Game.init = function () {
     Game.wheel = new window.Wheel($('#wheel-box'), $('#trace'), {
       onPick(i, word) {
+        if (!window.Store.state.seenIntro) hideCoach(true); // тронул букву — понял, как играть
         window.SFX.pick(i);
         window.HAPTIC.tap();
         renderPreview(word);
@@ -112,6 +114,7 @@
     $('#btn-shuffle').addEventListener('click', () => {
       window.SFX.click();
       Game.wheel.shuffle();
+      if (!window.Store.state.seenIntro) maybeShowCoach(); // пересобрать путь «пальца» под новую раскладку
     });
     $('#hint-lamp').addEventListener('click', () => hintLamp());
     $('#hint-target').addEventListener('click', () => hintTargetToggle());
@@ -190,6 +193,8 @@
     if (Game.saved.done && allFound()) {
       // пройденный уровень: показываем решённую сетку и сразу оверлей
       later(() => showOverlay(true), 350);
+    } else {
+      maybeShowCoach();
     }
   };
 
@@ -197,6 +202,7 @@
   Game.close = function () {
     Game.gen++;
     setTargetMode(false);
+    hideCoach(false); // подсказку не «засчитываем», если игрок ушёл, не тронув буквы
   };
 
   function layoutGrid() {
@@ -269,6 +275,45 @@
     pvTimer = setTimeout(() => renderPreview(''), cls === 'shake' ? 420 : 320);
   }
 
+  /* ---------- обучающая подсказка (только при самом первом запуске) ---------- */
+
+  function maybeShowCoach() {
+    if (window.Store.state.seenIntro) return;
+    const ls = Game.wheel && Game.wheel.letters;
+    const order = Game.wheel && Game.wheel.order;
+    if (!ls || !ls.length || !order) return;
+
+    $('#coach-tip').hidden = false;
+
+    // при системной «меньше движения» показываем только подпись, без бегающего пальца
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const hand = $('#coach-hand');
+    if (reduce) { hand.hidden = true; return; }
+
+    // короткий путь по трём соседним буквам на окружности — демонстрация жеста
+    const slots = [0, 1, 2].slice(0, Math.min(3, ls.length));
+    const pts = slots.map(s => ls[order[s]]);
+    const at = p => `translate(${p.x}px, ${p.y}px)`;
+    const frames = [{ transform: at(pts[0]) + ' scale(.5)', opacity: 0 }];
+    frames.push({ transform: at(pts[0]) + ' scale(1)', opacity: 1, offset: 0.10 });
+    for (let i = 1; i < pts.length; i++) {
+      frames.push({ transform: at(pts[i]) + ' scale(1)', opacity: 1, offset: 0.10 + 0.70 * (i / (pts.length - 1)) });
+    }
+    frames.push({ transform: at(pts[pts.length - 1]) + ' scale(1)', opacity: 1, offset: 0.90 });
+    frames.push({ transform: at(pts[pts.length - 1]) + ' scale(.5)', opacity: 0 });
+
+    hand.hidden = false;
+    if (Game.coachAnim) Game.coachAnim.cancel();
+    Game.coachAnim = hand.animate(frames, { duration: 2200, iterations: Infinity, easing: 'cubic-bezier(.4,.1,.3,1)' });
+  }
+
+  function hideCoach(markSeen) {
+    if (Game.coachAnim) { Game.coachAnim.cancel(); Game.coachAnim = null; }
+    $('#coach-tip').hidden = true;
+    $('#coach-hand').hidden = true;
+    if (markSeen && !window.Store.state.seenIntro) window.Store.setIntroSeen();
+  }
+
   /* ---------- проверка собранного слова ---------- */
 
   function submit(word) {
@@ -319,7 +364,7 @@
     window.SFX.word(gridWord.w.length);
     window.HAPTIC.ok();
     gridWord.cells.forEach((c, i) => {
-      setTimeout(() => {
+      later(() => {
         if (c.open) glowCell(c); else openCell(c);
       }, i * 45);
     });

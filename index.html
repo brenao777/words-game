@@ -46,12 +46,14 @@
     </div>
 
     <div class="wheel-zone">
+      <div id="coach-tip" hidden>Веди пальцем по буквам</div>
       <button class="hint-btn" id="hint-lamp" aria-label="Подсказка: случайная буква">
         <svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.55 1.1 1.2 1.27 2.2h4.66c.17-1 .57-1.65 1.27-2.2A6 6 0 0 0 12 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 19h4M10.7 21.5h2.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span class="cost">25</span>
       </button>
       <div class="wheel-box" id="wheel-box">
         <svg id="trace"></svg>
+        <div id="coach-hand" hidden></div>
         <button class="shuffle" id="btn-shuffle" aria-label="Перемешать">
           <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 13.6-5.7M20 12a8 8 0 0 1-13.6 5.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M17.8 2.6v4h-4M6.2 21.4v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>

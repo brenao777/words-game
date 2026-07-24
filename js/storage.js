@@ -11,6 +11,7 @@
     return {
       coins: DEFAULT_COINS,
       sound: true,
+      seenIntro: false, // показывали ли обучающую подсказку про «веди по буквам»
       levels: {}, // { [idx]: { found: [], bonus: [], hinted: [], done: false } }
     };
   }
@@ -45,6 +46,7 @@
 
     if (Number.isFinite(value.coins) && value.coins >= 0) next.coins = Math.floor(value.coins);
     if (typeof value.sound === 'boolean') next.sound = value.sound;
+    if (value.seenIntro === true) next.seenIntro = true;
 
     if (isRecord(value.levels)) {
       for (const [idx, levelState] of Object.entries(value.levels)) {
@@ -86,5 +88,6 @@
       save();
     },
     setSound(v) { load().sound = !!v; save(); },
+    setIntroSeen() { load().seenIntro = true; save(); },
   };
 })();

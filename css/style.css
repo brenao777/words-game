@@ -342,6 +342,42 @@ i.coin {
 #hint-lamp { position: absolute; left: 10px; top: 4px; }
 #hint-target { position: absolute; right: 10px; top: 4px; }
 
+/* ---- обучающая подсказка (первый запуск) ---- */
+#coach-tip {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  padding: 7px 15px;
+  border-radius: 999px;
+  background: rgba(29, 36, 56, .95);
+  border: 1px solid rgba(242, 182, 75, .4);
+  color: var(--gold-hi);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: coach-tip-in .4s var(--spring), coach-tip-breathe 2.2s var(--ease) .4s infinite;
+}
+@keyframes coach-tip-in { from { transform: translate(-50%, 8px) scale(.85); opacity: 0; } }
+@keyframes coach-tip-breathe { 50% { transform: translate(-50%, -3px); } }
+
+#coach-hand {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, rgba(255, 255, 255, .95), rgba(255, 215, 130, .85) 55%, rgba(242, 182, 75, .5));
+  box-shadow: 0 0 0 6px rgba(242, 182, 75, .18), 0 2px 10px rgba(0, 0, 0, .4);
+  pointer-events: none;
+}
+
 .wheel-box {
   position: relative;
   width: min(76vw, 310px);
@@ -585,4 +621,16 @@ i.coin {
 #rotate .ico { font-size: 44px; color: var(--gold); margin-bottom: 12px; }
 @media (orientation: landscape) and (max-height: 520px) {
   #rotate { display: grid !important; }
+}
+
+/* Доступность: уважаем системную настройку «меньше движения».
+   Клетки/буквы/оверлей мгновенно принимают конечное состояние, бесконечные
+   пульсации гаснут — игровая логика (раскрытие букв) сохраняется. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+  .overlay-pulse { display: none; }
 }
