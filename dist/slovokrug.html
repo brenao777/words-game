@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#10141f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23f2b64b'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%2310141f'/%3E%3C/svg%3E">
+<title>Словокруг</title>
+<style>
+/* ============ СЛОВОКРУГ — «Ночное золото» ============ */
+
+:root {
+  --bg: #10141f;
+  --bg2: #181e30;
+  --ink: #eef1f8;
+  --muted: #8b93ad;
+  --faint: rgba(255, 255, 255, .055);
+  --line: rgba(255, 255, 255, .09);
+  --gold: #f2b64b;
+  --gold-hi: #ffd782;
+  --gold-dim: rgba(242, 182, 75, .16);
+  --tile: #f5f0e4;
+  --tile-ink: #1c2233;
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --ease: cubic-bezier(.22, .8, .36, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--bg);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+#app {
+  position: relative;
+  height: 100dvh;
+  max-width: 520px;
+  margin: 0 auto;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 55% at 50% 112%, rgba(242, 182, 75, .07), transparent 60%),
+    radial-gradient(90% 60% at 50% -8%, #1b2238 0%, transparent 62%),
+    linear-gradient(var(--bg), var(--bg2));
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 14px calc(env(safe-area-inset-bottom, 0px) + 10px);
+  animation: screen-in .34s var(--ease);
+}
+
+@keyframes screen-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ============ Общие элементы ============ */
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  background: var(--faint);
+  border: 1px solid var(--line);
+  transition: transform .15s var(--spring), color .2s;
+}
+.icon-btn:active { transform: scale(.88); }
+.icon-btn svg { width: 21px; height: 21px; }
+.icon-btn.on { color: var(--gold); }
+
+.coins-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px 8px 10px;
+  border-radius: 999px;
+  background: var(--faint);
+  border: 1px solid var(--line);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: .02em;
+  font-variant-numeric: tabular-nums;
+}
+.coins-pill.small { padding: 6px 12px 6px 9px; font-size: 14px; }
+.coins-pill.bump b { animation: bump .4s var(--spring); display: inline-block; }
+@keyframes bump { 40% { transform: scale(1.35); color: var(--gold-hi); } }
+
+i.coin {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 30%, var(--gold-hi), var(--gold) 58%, #b97f22);
+  box-shadow: 0 0 8px rgba(242, 182, 75, .55);
+  flex: none;
+}
+
+/* ============ Главный экран ============ */
+
+.home-head { text-align: center; padding: 4px 2px 12px; }
+
+.home-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.logo {
+  font-size: clamp(30px, 9vw, 40px);
+  font-weight: 800;
+  letter-spacing: .14em;
+  line-height: 1;
+}
+.logo span { color: var(--gold); }
+
+.tagline {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: .12em;
+}
+
+.progress {
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--gold);
+  opacity: .85;
+}
+
+.levels {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(10, 1fr);
+  gap: 8px;
+  padding: 4px 2px;
+}
+
+.lvl {
+  position: relative;
+  border-radius: 14px;
+  background: var(--faint);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-weight: 700;
+  font-size: clamp(13px, 4vw, 17px);
+  font-variant-numeric: tabular-nums;
+  display: grid;
+  place-items: center;
+  transition: transform .15s var(--spring), background .2s, color .2s;
+}
+.lvl:active { transform: scale(.9); }
+.lvl.started { color: var(--ink); }
+.lvl.started::after {
+  content: "";
+  position: absolute;
+  bottom: 6px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+.lvl.done {
+  background: linear-gradient(150deg, var(--gold-hi), var(--gold) 55%, #cf9333);
+  border-color: transparent;
+  color: #3a2c10;
+  box-shadow: 0 4px 16px rgba(242, 182, 75, .22);
+}
+.lvl.done::after { display: none; }
+
+/* ============ Игровой экран ============ */
+
+#game { padding-left: 12px; padding-right: 12px; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 6px;
+}
+.lvl-title {
+  flex: 1;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: .06em;
+}
+
+.grid-wrap {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 8px 0 4px;
+}
+
+.grid { position: relative; }
+
+.cell {
+  position: absolute;
+  width: var(--cell);
+  height: var(--cell);
+  border-radius: calc(var(--cell) * .22);
+  background: var(--faint);
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: calc(var(--cell) * .52);
+  color: var(--tile-ink);
+  transition: box-shadow .25s;
+}
+
+.cell.open {
+  background: linear-gradient(160deg, #fdf9ee, var(--tile) 60%, #e6dfc9);
+  border-color: transparent;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .35);
+  animation: cell-pop .5s var(--spring);
+}
+@keyframes cell-pop {
+  0%   { transform: scale(.3) rotate(-8deg); opacity: 0; }
+  60%  { transform: scale(1.12) rotate(2deg); opacity: 1; }
+  100% { transform: none; }
+}
+
+.cell.hinted { background: linear-gradient(160deg, var(--gold-hi), var(--gold) 70%); }
+
+.cell.glow { animation: cell-glow .6s var(--ease); }
+@keyframes cell-glow {
+  30% { box-shadow: 0 0 18px 2px rgba(242, 182, 75, .8); transform: scale(1.08); }
+}
+
+.cell.target-mode { animation: target-pulse 1.1s ease-in-out infinite; cursor: pointer; }
+@keyframes target-pulse {
+  50% { background: var(--gold-dim); border-color: var(--gold); }
+}
+
+/* ---- превью слова ---- */
+
+.preview-row {
+  position: relative;
+  height: 52px;
+  display: grid;
+  place-items: center;
+}
+
+.preview { display: flex; gap: 5px; }
+
+.pv-tile {
+  width: 34px;
+  height: 38px;
+  border-radius: 9px;
+  background: var(--tile);
+  color: var(--tile-ink);
+  font-weight: 800;
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+  animation: pv-in .22s var(--spring);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .3);
+}
+@keyframes pv-in {
+  from { transform: scale(.4) translateY(8px); opacity: 0; }
+}
+
+.preview.shake { animation: shake .4s var(--ease); }
+@keyframes shake {
+  20% { transform: translateX(-8px); }
+  45% { transform: translateX(7px); }
+  70% { transform: translateX(-4px); }
+  90% { transform: translateX(2px); }
+}
+.preview.dissolve .pv-tile { animation: pv-out .3s var(--ease) forwards; }
+@keyframes pv-out {
+  to { transform: scale(.5) translateY(6px); opacity: 0; }
+}
+.preview.absorb .pv-tile { animation: pv-up .32s var(--ease) forwards; }
+@keyframes pv-up {
+  to { transform: translateY(-18px) scale(.6); opacity: 0; }
+}
+
+.bonus-chip {
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: var(--faint);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+.bonus-chip .star { color: var(--gold); font-size: 12px; }
+.bonus-chip.bump { animation: bump .4s var(--spring); }
+
+/* ---- колесо ---- */
+
+.wheel-zone {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 6px 0 4px;
+}
+#hint-lamp { position: absolute; left: 10px; top: 4px; }
+#hint-target { position: absolute; right: 10px; top: 4px; }
+
+.wheel-box {
+  position: relative;
+  width: min(76vw, 310px);
+  height: min(76vw, 310px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 42%, rgba(255, 255, 255, .05), rgba(255, 255, 255, .015) 70%);
+  border: 1px solid var(--line);
+  flex: none;
+}
+
+#trace {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.letter {
+  position: absolute;
+  width: var(--lsize, 60px);
+  height: var(--lsize, 60px);
+  margin: calc(var(--lsize, 60px) / -2) 0 0 calc(var(--lsize, 60px) / -2);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: calc(var(--lsize, 60px) * .46);
+  color: var(--ink);
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid var(--line);
+  transition: transform .18s var(--spring), background .15s, color .15s, left .35s var(--spring), top .35s var(--spring);
+  pointer-events: none;
+}
+
+.letter.picked {
+  background: linear-gradient(160deg, var(--gold-hi), var(--gold) 65%);
+  border-color: transparent;
+  color: #3a2c10;
+  transform: scale(1.18);
+  box-shadow: 0 0 20px rgba(242, 182, 75, .5);
+}
+
+.shuffle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  background: var(--faint);
+  border: 1px solid var(--line);
+  transition: transform .3s var(--spring), color .2s;
+}
+.shuffle svg { width: 20px; height: 20px; }
+.shuffle:active { transform: translate(-50%, -50%) scale(.85) rotate(120deg); color: var(--gold); }
+
+.hint-btn {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--gold);
+  background: var(--gold-dim);
+  border: 1px solid rgba(242, 182, 75, .3);
+  transition: transform .15s var(--spring), opacity .2s;
+  flex: none;
+}
+.hint-btn svg { width: 24px; height: 24px; }
+.hint-btn:active { transform: scale(.88); }
+.hint-btn.disabled { opacity: .35; }
+.hint-btn.armed { animation: target-pulse 1.1s ease-in-out infinite; }
+.hint-btn .cost {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--bg2);
+  border: 1px solid rgba(242, 182, 75, .35);
+  color: var(--gold-hi);
+}
+
+/* ============ Оверлей победы ============ */
+
+#overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 13, 22, .68);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: fade-in .3s var(--ease);
+}
+@keyframes fade-in { from { opacity: 0; } }
+
+.overlay-pulse {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(242, 182, 75, .5), transparent 70%);
+  animation: pulse-out 1.1s var(--ease) forwards;
+  pointer-events: none;
+}
+@keyframes pulse-out {
+  to { width: 150vmax; height: 150vmax; opacity: 0; }
+}
+
+.overlay-card {
+  width: min(84vw, 340px);
+  padding: 30px 26px 24px;
+  border-radius: 26px;
+  text-align: center;
+  background: linear-gradient(170deg, #1d2438, #151a2b);
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .5);
+  animation: card-in .5s var(--spring);
+}
+@keyframes card-in {
+  from { transform: scale(.7) translateY(30px); opacity: 0; }
+}
+
+.overlay-kicker {
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+}
+.overlay-title {
+  font-size: 30px;
+  font-weight: 800;
+  margin: 10px 0 4px;
+}
+.overlay-stats {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 8px 0 20px;
+}
+.overlay-stats b { color: var(--gold-hi); font-variant-numeric: tabular-nums; }
+
+.overlay-actions { display: flex; gap: 10px; }
+
+.btn {
+  flex: 1;
+  padding: 14px 10px;
+  border-radius: 15px;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: .03em;
+  transition: transform .15s var(--spring);
+}
+.btn:active { transform: scale(.93); }
+.btn.gold {
+  background: linear-gradient(150deg, var(--gold-hi), var(--gold) 55%, #cf9333);
+  color: #3a2c10;
+  box-shadow: 0 6px 18px rgba(242, 182, 75, .3);
+}
+.btn.ghost {
+  background: var(--faint);
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+/* ============ Тост и эффекты ============ */
+
+#toast {
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 118px);
+  transform: translateX(-50%);
+  z-index: 40;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(29, 36, 56, .95);
+  border: 1px solid var(--line);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: toast-in .3s var(--spring);
+}
+#toast.gold { color: var(--gold-hi); border-color: rgba(242, 182, 75, .4); }
+#toast.out { animation: toast-out .25s var(--ease) forwards; }
+@keyframes toast-in { from { transform: translate(-50%, 14px) scale(.8); opacity: 0; } }
+@keyframes toast-out { to { transform: translate(-50%, 8px); opacity: 0; } }
+
+.fx-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.fly-coin {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 30%, var(--gold-hi), var(--gold) 58%, #b97f22);
+  box-shadow: 0 0 10px rgba(242, 182, 75, .7);
+}
+
+@media (max-height: 700px) {
+  .wheel-box { width: min(66vw, 250px); height: min(66vw, 250px); }
+  .preview-row { height: 44px; }
+  .home-head { padding-bottom: 6px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ГЛАВНЫЙ ЭКРАН -->
+  <section id="home" class="screen">
+    <header class="home-head">
+      <div class="home-top">
+        <div class="coins-pill" id="home-coins"><i class="coin"></i><b>0</b></div>
+        <button class="icon-btn" id="home-sound" aria-label="Звук"></button>
+      </div>
+      <h1 class="logo">СЛОВО<span>КРУГ</span></h1>
+      <p class="tagline">собери все слова из букв</p>
+      <p class="progress" id="home-progress"></p>
+    </header>
+    <div class="levels" id="levels"></div>
+  </section>
+
+  <!-- ИГРОВОЙ ЭКРАН -->
+  <section id="game" class="screen" hidden>
+    <header class="topbar">
+      <button class="icon-btn" id="btn-back" aria-label="Назад">
+        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="lvl-title" id="lvl-title">Уровень 1</div>
+      <div class="coins-pill small" id="game-coins"><i class="coin"></i><b>0</b></div>
+      <button class="icon-btn" id="btn-sound" aria-label="Звук"></button>
+    </header>
+
+    <div class="grid-wrap" id="grid-wrap">
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <div class="preview-row">
+      <button class="bonus-chip" id="bonus-chip" hidden><span class="star">✦</span><b>0</b></button>
+      <div class="preview" id="preview"></div>
+    </div>
+
+    <div class="wheel-zone">
+      <button class="hint-btn" id="hint-lamp" aria-label="Подсказка: случайная буква">
+        <svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.55 1.1 1.2 1.27 2.2h4.66c.17-1 .57-1.65 1.27-2.2A6 6 0 0 0 12 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 19h4M10.7 21.5h2.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span class="cost">25</span>
+      </button>
+      <div class="wheel-box" id="wheel-box">
+        <svg id="trace"></svg>
+        <button class="shuffle" id="btn-shuffle" aria-label="Перемешать">
+          <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 13.6-5.7M20 12a8 8 0 0 1-13.6 5.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M17.8 2.6v4h-4M6.2 21.4v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <button class="hint-btn" id="hint-target" aria-label="Подсказка: буква в ячейке">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 1.8v3.4M12 18.8v3.4M1.8 12h3.4M18.8 12h3.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span class="cost">50</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ОВЕРЛЕЙ ПОБЕДЫ -->
+  <div id="overlay" hidden>
+    <div class="overlay-pulse"></div>
+    <div class="overlay-card">
+      <div class="overlay-kicker" id="ov-kicker">уровень пройден</div>
+      <div class="overlay-title" id="ov-title">Отлично!</div>
+      <div class="overlay-stats" id="ov-stats"></div>
+      <div class="overlay-actions">
+        <button class="btn ghost" id="ov-home">К уровням</button>
+        <button class="btn gold" id="ov-next">Дальше</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" hidden></div>
+  <div class="fx-layer" id="fx"></div>
+</div>
+
+<script>
+/* Сгенерировано tools/generate.js — не редактировать вручную. */
+window.SK_LEVELS = [
+{l:["о","к","б","а","р"],w:[["кобра",0,2,0],["бок",1,1,1],["бор",3,0,1],["бар",3,0,0]]},
+{l:["м","а","о","р","к"],w:[["комар",0,2,0],["омар",1,2,1],["рак",1,5,0],["ком",2,0,1]]},
+{l:["п","а","к","и","р"],w:[["парик",0,2,0],["икра",4,1,1],["парк",2,0,1],["пар",3,4,0]]},
+{l:["к","а","с","о","т"],w:[["тоска",0,2,0],["скат",4,0,1],["коса",1,1,1],["кот",4,1,0]]},
+{l:["б","к","а","о","л"],w:[["колба",0,2,0],["лак",4,1,1],["бак",0,0,1],["кол",2,0,1],["бок",0,0,0]]},
+{l:["л","к","о","б","а"],w:[["бокал",0,2,1],["лак",0,6,0],["бал",0,2,0],["бок",2,4,1],["кол",2,0,1]]},
+{l:["у","к","л","а","б"],w:[["булка",0,1,0],["лук",1,0,1],["куб",3,1,1],["бал",3,3,0],["лак",5,3,1]]},
+{l:["р","б","а","ы","к"],w:[["рыбак",1,2,0],["рыба",1,2,1],["бак",0,5,0],["рак",5,0,1],["бар",3,0,0]]},
+{l:["к","у","р","а","п"],w:[["крупа",3,0,1],["рука",0,4,0],["карп",1,1,0],["пар",3,3,0],["рак",0,4,1]]},
+{l:["л","а","о","п","к"],w:[["полка",1,2,0],["опал",2,2,1],["кол",3,0,1],["пол",0,5,0]]},
+{l:["р","о","а","к","н"],w:[["крона",0,3,0],["кран",3,0,1],["рак",1,0,0],["рок",0,1,1]]},
+{l:["с","л","е","о","в"],w:[["весло",0,2,0],["осел",4,2,1],["вес",3,4,0],["лес",2,0,1]]},
+{l:["а","п","т","о","р","к"],w:[["прокат",0,3,0],["тропа",1,2,1],["порт",5,0,1],["ток",3,1,1],["акт",4,3,1]]},
+{l:["т","р","о","а","с","к"],w:[["строка",0,2,0],["скат",5,0,1],["акт",1,0,1],["ток",3,1,1],["сок",0,2,1]]},
+{l:["о","а","р","н","к","т"],w:[["картон",0,2,0],["кора",0,2,1],["нора",5,2,1],["акт",3,0,1],["рок",2,2,1]]},
+{l:["о","п","к","л","т","а"],w:[["платок",0,4,0],["полка",1,2,1],["плот",1,2,0],["пот",4,0,1],["кол",5,4,1]]},
+{l:["и","с","р","т","к","а"],w:[["старик",1,0,1],["икра",0,5,0],["скат",3,3,1],["рак",0,2,0],["кит",3,4,0]]},
+{l:["к","е","с","о","т","р"],w:[["костер",2,0,1],["осетр",1,2,0],["рок",5,2,1],["сок",0,0,0],["рот",4,0,1]]},
+{l:["а","р","о","б","к","п"],w:[["пробка",1,0,1],["кора",1,4,0],["бок",0,2,0],["пар",1,0,0],["рак",4,3,1]]},
+{l:["л","с","к","т","и","а"],w:[["ластик",0,4,0],["аист",2,2,1],["скат",0,2,0],["лак",1,0,1],["кит",4,3,1]]},
+{l:["т","а","й","р","о","к"],w:[["тройка",0,4,0],["кора",5,1,1],["корт",1,2,1],["крот",4,4,1],["кот",1,2,0],["акт",3,0,1]]},
+{l:["а","з","у","к","б","л"],w:[["блузка",2,2,1],["булка",2,2,0],["зуб",2,5,0],["бал",1,7,0],["зал",0,3,0],["лак",5,0,1]]},
+{l:["л","м","у","б","а","к"],w:[["клумба",3,0,1],["булка",1,1,0],["клуб",0,4,0],["мак",3,3,0],["бак",0,2,1],["лук",1,4,1]]},
+{l:["к","р","о","а","т","ь"],w:[["токарь",5,2,1],["крот",2,2,0],["рак",3,4,0],["ток",2,0,1],["кот",0,0,0],["рот",3,4,1]]},
+{l:["а","к","р","и","п","з"],w:[["приказ",0,3,0],["икра",2,3,1],["парк",0,5,0],["приз",5,0,1],["пир",1,1,1],["пик",0,5,1]]},
+{l:["к","е","о","с","л","т"],w:[["стекло",1,2,1],["стол",1,2,0],["тело",4,0,1],["кот",2,0,1],["ток",0,7,0],["лес",0,4,0]]},
+{l:["т","о","е","м","р","с"],w:[["термос",4,2,1],["осетр",0,4,0],["метро",0,0,1],["сорт",1,4,1],["морс",0,0,0],["сом",4,7,0]]},
+{l:["т","л","о","с","у","к"],w:[["лоскут",0,2,0],["стол",2,2,1],["укол",4,2,1],["ток",3,0,1],["лук",4,5,0],["сок",6,3,1]]},
+{l:["р","п","о","т","к","е"],w:[["проект",1,1,0],["порт",3,0,1],["перо",1,1,1],["рок",0,4,0],["рот",0,4,1],["кот",2,4,1],["ток",6,1,1]]},
+{l:["л","п","и","к","а","т"],w:[["плитка",1,1,1],["пила",1,1,0],["клип",1,5,0],["липа",0,3,0],["лак",4,0,1],["кит",4,2,0],["акт",6,0,1]]},
+{l:["р","и","т","о","а","с"],w:[["сирота",1,4,0],["сорт",4,3,1],["трио",2,2,1],["сито",0,2,0],["оса",6,2,1],["рис",0,0,1],["рот",0,0,0]]},
+{l:["с","р","е","к","о","т"],w:[["корсет",0,1,0],["сорт",3,1,1],["корт",0,4,0],["рот",1,0,1],["рок",3,3,0],["ток",5,1,1],["кот",0,4,1]]},
+{l:["с","м","а","т","р","о"],w:[["матрос",0,2,1],["омар",0,6,0],["мост",0,2,0],["морс",3,4,1],["оса",3,5,0],["рот",3,0,1],["сом",3,7,0]]},
+{l:["н","р","к","а","з","о"],w:[["наркоз",3,1,1],["крона",1,5,0],["закон",1,3,1],["роза",3,3,0],["кран",0,1,0],["кора",6,0,1],["рак",4,0,0]]},
+{l:["к","р","о","е","с","в"],w:[["свекор",0,5,0],["ковер",2,2,1],["срок",4,3,1],["век",0,2,0],["сок",0,5,1],["ров",0,0,1],["рок",0,0,0]]},
+{l:["к","о","с","т","о","р"],w:[["росток",1,2,0],["корт",5,1,1],["крот",2,0,1],["рот",3,4,0],["сок",0,0,0],["рок",3,4,1],["кот",3,6,0]]},
+{l:["р","к","т","о","с","й","а"],w:[["стройка",0,4,0],["тройка",5,0,1],["корт",2,2,1],["скат",0,4,1],["рой",4,2,0],["рок",0,2,0],["рот",3,0,0]]},
+{l:["т","к","о","а","с","р","а"],w:[["красота",0,5,0],["строка",6,0,1],["скат",2,3,1],["коса",0,3,0],["кора",4,4,1],["кот",0,5,1],["ток",0,1,1]]},
+{l:["л","п","т","о","к","и","а"],w:[["пилотка",0,4,0],["икота",3,2,1],["пилот",2,2,0],["клоп",0,1,1],["лак",2,6,0],["акт",6,4,1],["пол",4,0,1]]},
+{l:["а","с","н","к","м","р","о"],w:[["насморк",0,3,0],["срок",6,0,1],["кора",1,0,1],["морс",3,0,0],["коса",4,2,1],["мак",3,5,0],["сон",0,1,0]]},
+{l:["с","б","а","р","о","к","и"],w:[["абрикос",4,1,1],["коса",1,1,0],["риск",3,4,0],["бокс",6,2,1],["икра",1,0,1],["бак",0,3,0],["оса",3,7,0]]},
+{l:["а","о","к","а","б","т","р"],w:[["акробат",0,3,0],["карта",0,2,1],["брат",2,2,1],["кора",5,0,1],["бар",4,3,1],["бор",4,1,0],["рот",4,5,0]]},
+{l:["к","ь","р","л","а","о","б"],w:[["корабль",4,0,1],["роль",2,5,0],["боль",3,1,0],["рок",2,5,1],["бок",0,7,0],["лоб",0,5,1],["бак",3,3,0]]},
+{l:["а","а","с","о","б","л","к"],w:[["колбаса",3,0,1],["коса",0,6,0],["бокс",1,0,0],["оса",1,4,0],["бас",1,0,1],["бак",3,3,0],["сок",3,5,0],["кол",5,5,1]]},
+{l:["к","а","м","т","о","а","с"],w:[["самокат",0,4,0],["маска",5,0,1],["кома",3,0,0],["мост",3,3,1],["скат",0,6,0],["коса",1,1,1],["сок",0,2,0],["оса",4,2,0]]},
+{l:["о","а","р","з","е","т","к"],w:[["розетка",0,3,0],["отказ",6,0,1],["корт",0,1,1],["река",3,2,1],["акт",3,5,0],["ток",5,5,1],["рот",4,1,0],["рок",3,7,0]]},
+{l:["н","а","и","т","о","к","п"],w:[["напиток",2,0,1],["икона",2,3,0],["капот",2,6,0],["пони",0,0,0],["пион",5,0,1],["пот",0,0,1],["тон",5,5,1],["акт",0,4,0]]},
+{l:["а","к","л","т","а","о","п"],w:[["лопатка",2,1,1],["коала",2,6,0],["опал",5,3,1],["клоп",0,2,0],["лак",1,4,0],["кот",4,3,0],["ток",0,0,1],["плот",6,0,1],["пол",4,1,0]]},
+{l:["н","м","с","и","а","о","к"],w:[["мокасин",0,2,0],["икона",5,2,1],["осина",2,5,0],["кома",2,4,1],["сон",6,0,1],["сок",1,1,1],["нос",4,0,1],["ком",0,6,0],["иск",0,4,1]]},
+{l:["д","н","о","к","а","и","р"],w:[["родинка",3,0,1],["кора",1,0,0],["кино",1,0,1],["нора",0,6,0],["кадр",3,5,0],["дно",5,5,1],["род",4,7,0],["код",1,5,1],["дар",6,3,1]]}
+];
+</script>
+<script>
+/* Сгенерировано tools/generate.js — не редактировать вручную. */
+window.SK_DICT = new Set("абзац абрикос авария автобус автор адвокат азарт азбука аист айсберг акация аккорд акробат акт актер актриса акула алгебра аллея алмаз алфавит альбом амулет анализ ананас ангина антракт аптека аптечка арахис арбуз арена ария арка артерия артист арфа астма астра асфальт атлас атлет атом афиша бабочка бабушка багаж базар бак бал балет балкон балл банан банк банка банкет банкир бант баня бар барабан баран барсук бархат бас басня бассейн батарея батон бахрома башня баян бег бегемот бегун бедняк бедро безе бекон белка белье бензин берег береза берет беседка бизон билет бильярд бинт бирюза битва благо близнец блин блокнот блоха блузка блюдо блюдце бобр богач боевик боец бок бокал бокс боксер болезнь болото болт боль бор бордюр борец борода борщ борьба ботинок боулинг бочка браслет брат брелок бриз бритва бровь бронхит брошь бубен буква букварь букет булавка булка бульвар бульон бумага бургер буря бусина бутон бутылка бык вагон ваза вакцина валенок валик вальс ванна варан варежка вареник варенье василек вата вафля вдова вдовец вдох ведро ведьма веер везение век веко вельвет вена веник вера веранда верблюд веревка вес веселье весло весна ветер ветка ветчина вечер вешалка вид видео виза вилка вина вино винт вирус висок витамин витраж витрина вишня вкус власть внук внучка вода водопад воздух возраст воин войлок война вокал вокзал волк волна волос воля вопрос вор воробей ворон ворона ворот восторг враг вражда вратарь врач вред время встреча вуаль вулкан выбор вывеска вывих выдох выдра вышивка вьюга гадюка газ газета газон гайка галерея галка галоша галстук галька гамак гамма гараж гармонь гвоздь генерал гений гепард герой гид гиена гимн гимнаст гипс гитара глава глагол глаз глина глобус глухарь гнев год гол голень голова голод гололед голос голубь гонка гора горбуша горе горилла горло город горох горчица горшок гость гравюра град градус грамота гранат графика грач гребень грелка грех гречка гриб грим грипп гроза гром грудь грусть груша грыжа гуашь губа губка гуляш гусь дама дар дартс дача дачник дверь двойка двор дворец дворник дебют девочка девушка дед дедушка дело дельфин день дерево десерт десна детство дефис джаз джем джемпер диабет диагноз диадема диалог диван диета диктант диплом дирижер диск дитя дневник дно добро доброта добряк доверие дождь доклад доктор долг долина дом домино дорога дорожка досада доска дочка дочь драма дрель дрозд друг дружба дуб дубль дуршлаг дух духовка душ душа дуэт дым дыня дырокол дыхание дядя дятел еда единица ежик елка ель енот ерш жаба жажда жакет жалость жанр жар жара желание желе желудок желудь жемчуг жена жених женщина живот жизнь жилет жираф жук журавль журнал забор зависть завод завтрак загадка задание задача закат заколка закон зал залив заметка замок замша занавес заноза заплата запонка запрет запятая заря засуха затылок зачет защита заяц звезда звонок звук здание зебра зевота зеленка зелень земля зеркало зерно зефир зима зло злоба злодей злость змея знак знание значок золото зонт зонтик зоопарк зрачок зрение зритель зуб зубр зуд зять ива игла иголка игра игрок игрушка идея изба издание изжога изумруд изюм икона икота икра индейка индюк иней инженер инсульт интерес инфаркт ирис ирония иск испуг истина итог йогурт йод кабан кабачок кабина каблук кадр какао кактус калина калитка кальмар камбала камень камера камин камыш каньон капитан капля капот каприз капрон капуста капюшон каравай караоке карась кариес карман карниз карп карта картина картон касса кассир катер каток кафе каша кашель каштан каюта квартал квас кегля кедр кекс кенгуру кепка кетчуп кефир киви килька кимоно кино киоск кирпич кисель кисть кит кишка клад класс клевер клей клен клетка клещ клиент клиника клип клоп клоун клуб клубок клумба клык клюква ключ ключица клюшка клякса книга кнопка князь коала кобра ковер коврик ковш код кожа коза козел козырь кокос кол колба колбаса колдун колено колесо колибри коллега колледж колодец колонна колос колье кольцо ком кома команда комар комедия комета комната комод компас компот конверт конкурс конфета концерт конь кора корабль коралл корень корзина коридор коробка корова король корона корсет корт коршун корь коса космос костер костыль кость костюм косуля косынка кот котенок котлета коттедж кофе кофта кошелек кошка краб край кран крапива краска красота крем кресло крик критик кровать кровь кролик крона крот круг кружево кружка крупа крыльцо крыса крыша крышка куб кубик кубок кувалда кувшин кузнец кузов кукла кукушка кулак кулич кулон куница купе купец куплет купол курага курица курорт курс куртка курьер куст кухня лаванда лаваш лавина лавка ладонь ладья лак лама лампа ландыш лапа лапша ларек ласка ластик лебедь лев легенда лед ледник лейка лекция лен лента лентяй лень леопард лес лесник лето летчик лечение лещ ливень лидер лилия лимон линейка линза липа лиса лист листок лифт лицей лицо лоб лобзик лодка лодыжка ложа ложка ложь локоть лом лопата лопатка лоскут лосось лось лото лошадь луг лужа лук луна лупа луч лыжник лысина любовь люк люстра лягушка магазин магнит мазь май майка майонез майор мак макушка малахит малина малыш мальчик маляр мама мамонт манера манжета манка мантия марафон маркер марля марш маршрут маска масло массаж мастер матрас матрос матч мать мачеха машина маяк мебель мед медаль медведь медик медуза мел мелодия месяц метель метла метр метро мех механик мечеть мечта мешок миг мигрень мизинец микроб миксер мим мимоза министр минтай минута мир миска мишура мнение мозаика мозг мозоль мокасин молния молоко молот молоток моль момент монах монета монолог монтаж мопед море морж морковь мороз морс морщина моряк мост мотор мотылек мох мочалка мочка мощь мрамор мудрец муж мужчина муза музей музыка мука мундир муравей мусс муха мухомор мыло мысль мышца мышь мэр мясник мясо мята мяч навык надежда накидка напиток наркоз народ нарцисс наряд насморк наука небо невеста неделя нейлон нерв нитка нить ничья новичок нога ноготь нож ножовка ноздря номер нора нос носок носорог нота ночь няня оазис обгон обед обида облако обложка обман обморок ободок обочина обрыв обувь объезд овраг овца ограда огурец одежда одеяло ожог озеро озноб океан окно окрошка окунь олень ольха омар омлет опал опера опрос опыт орбита орган орел орех оркестр орхидея оса осел осень осетр осина осмотр остров отвага ответ отдых отель отец отказ отлив отметка отпуск отрывок отчим офис офицер охотник оценка очередь ошибка павлин падеж пакет палата палатка палец палитра палка пальма пальто память панама панда паника пантера папа папка пар пара парад парень парик парк паровоз паром пароход парта партер парус парча паспорт паста пастух паук пациент певец певица педагог педаль пейзаж пекарня пекарь пеликан пена пенал пень перевод перелом переход перец период перо персик пес песец песня песок петух печаль печать печень печенье печь пешеход пешка пещера пианино пианист пиво пиджак пижама пик пикник пила пилот пилотка пингвин пион пир пиранья пират пирог письмо питон пихта пицца пищевод план планета платина платок платье плащ плед пленка плечо плита плитка плов пловец плод пломба плот плотник площадь пляж повар повесть поворот повязка погода подарок подвал поднос подол подошва подпись подруга подушка подъезд поезд поездка пожар позор покой покупка пол полдень поле полиция полка полотно полынь польза полька поляна помада помидор помощь пони пончик попкорн попугай порез порог порт портрет порядок посуда пот потолок потомок поход почва почерк почка почта поэзия поэма поэт пояс правда правило правнук право прадед предлог предмет предок прибой приз приказ прилив пример принц припев природа пробка провод проезд проект проза прокат просьба пруд прыжок прыщ пряжа пряжка пряник птенец птица публика пудра пульс пульт пума пупок пурга пустыня путевка путь пух пуховик пчела пшено пылесос пыль пыльца пьеса пюре пятерка пятка равнина рагу радость радуга разум рай район рак ракета ракетка ракушка рама рана ранец рассвет рассказ ребенок ребро ребус редис резинка рейс река реклама рекорд рельс ремень репа ресница реферат рецепт речь решение ринг рис риск рисунок ритм риф рифма ров рог род родинка родник родня роза розетка рой рок ролик роль роман романс ромашка роса росток рот роща рояль рубанок рубашка рубин рука рукав рулетка руль ручей ручка рыба рыбак рыбалка рынок рысь рыцарь рюкзак рюмка рябина ряд сад салат сало салон салют самовар самокат самолет сапог сапфир сарай сарафан сатин сауна сахар сборник свадьба свекла свекор сверло сверчок свет свеча свинина свинья свитер свобода сдача сеанс сезон секрет секунда село сельдь семга семинар семья семя сено сердце серебро сериал серия серьга сессия сестра сила силач символ синица синяк сирень сироп сирота ситец сито сказка скала скалка скат сквер скворец скелет скидка склад складка склон скобка скотч скрепка скрипач скрипка скука скула слава слеза слесарь слива словарь слово слог слон слух случай слюна слякоть смерть смерч сметана смех смокинг смысл снег снегирь собака соболь собор событие сова совесть совет совок сок сокол солдат солнце соло соловей соль сом сон сорока сорочка сорт сосед сосиска сосна сосуд соус союз соя спальня спина спица спичка спор спорт срок ссора стадион стакан станция старик старт статуя статья ствол стебель стекло стеллаж стелька стена степлер степь стиль стих стол столб столица столяр стопа стоянка страсть страус страх стресс стриж стройка строка струна студент стул ступня стыд сувенир сугроб судак судьба судья сукно сумка сундук суп супруг супруга сурок суслик сустав суть суффикс сухарь сцена счастье съемка сын сыпь сыр сыщик сюжет сюрприз табурет таз тайга тайна такси таксист такт талант талия тамада танго танец танк танцор таракан тарелка тачка творог театр тезка текст телега тележка теленок телефон тело теннис тенор тень теория терка термос тест тесто тесть тетрадь тетя теща тигр тир тире тишина ткань товар товарищ ток токарь том томат тон тоннель топаз тополь топор тормоз торт тоска тост точилка точка трава травма трактор трамвай трасса тревога тренер треска триллер трио тритон тройка тропа трость тротуар труба труппа трус тряпка туалет туз тулуп туман тумба тундра тунец туника тупик тур турист турник турнир туфля туча тушь тыква тюлень тюль тюльпан тюрбан угорь угроза удав удача удочка ужас ужин указка укол укроп укус улитка улица улыбка умение умник унитаз уныние ураган урна урок успех утенок утка утро утюг уха ухо учеба учебник ученик учитель ушанка ушиб ущелье уют фабрика фазан фанат фара фартук фарфор фарш фасад фасоль фата фен ферзь фермер фетр фиалка физик физика филе филин фильм финал финик финиш фишка флаг фланель флейта фокус фонарь фонтан форель форма формула фраза фрак фреска фундук фуражка фургон футбол футляр халат халва хаос хвоя химик химия хирург хит хлеб хлопок хозяин хозяйка хоккей холм холод холст хомяк хор хорек хоровод храм храп хрящ хурма цапля царь цветок цель цена центр цепочка церковь цирк циркуль цитата чай чайка чайник час чашка чаща чек челка человек челюсть чемодан чемпион чердак череп черешня черника чеснок честь чехол чиж чтение чувство чудо чулок шаг шайба шакал шаль шаман шампунь шанс шапка шар шарф шаурма шахтер шашка шашлык швабра швея шедевр шезлонг шелк шерсть шея шило шина шифон шишка шкаф школа шланг шлем шляпа шмель шнур шнурок шов шок шоколад шоссе шофер шпилька шпион шприц шрам шрифт штанга штиль штопор штора шторм штраф шуба шум шуруп шут шутка шутник щека щенок щетка щит щука экзамен эклер экран эмоция эпизод эпоха эскиз этаж этюд эхо юбилей юбка юла юмор юность юноша юрист яблоня ягненок ягода ягуар язва язык яичница яйцо якорь яма янтарь ярмарка ярость ясень ястреб яхта ящик".split(" "));
+</script>
+<script>
+/* Словокруг — звук: полностью синтез через Web Audio, без файлов. */
+(function () {
+  'use strict';
+
+  let ctx = null, master = null;
+  let enabled = true;
+
+  function ensure() {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return false;
+      ctx = new AC();
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -18;
+      comp.knee.value = 24;
+      comp.ratio.value = 6;
+      master = ctx.createGain();
+      master.gain.value = 0.85;
+      master.connect(comp);
+      comp.connect(ctx.destination);
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return true;
+  }
+
+  function now() { return ctx.currentTime; }
+
+  /* Мягкий щипок: осциллятор -> lowpass -> огибающая. */
+  function pluck(freq, t0, opt) {
+    opt = opt || {};
+    const t = now() + (t0 || 0);
+    const osc = ctx.createOscillator();
+    const flt = ctx.createBiquadFilter();
+    const g = ctx.createGain();
+    osc.type = opt.type || 'triangle';
+    osc.frequency.value = freq;
+    if (opt.glide) osc.frequency.exponentialRampToValueAtTime(opt.glide, t + (opt.dur || 0.18));
+    flt.type = 'lowpass';
+    flt.frequency.value = opt.cutoff || freq * 4;
+    flt.Q.value = 0.7;
+    const vol = opt.gain != null ? opt.gain : 0.4;
+    const dur = opt.dur || 0.18;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(flt); flt.connect(g); g.connect(master);
+    osc.start(t); osc.stop(t + dur + 0.05);
+  }
+
+  /* Искра: короткий шум через highpass. */
+  function sparkle(t0, opt) {
+    opt = opt || {};
+    const t = now() + (t0 || 0);
+    const dur = opt.dur || 0.25;
+    const len = Math.max(1, Math.floor(ctx.sampleRate * dur));
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.2);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const flt = ctx.createBiquadFilter();
+    flt.type = 'highpass';
+    flt.frequency.value = opt.hp || 5000;
+    const g = ctx.createGain();
+    g.gain.value = opt.gain != null ? opt.gain : 0.12;
+    src.connect(flt); flt.connect(g); g.connect(master);
+    src.start(t);
+  }
+
+  /* Пентатоника до-мажор на две октавы — «пение» слова при выборе букв. */
+  const PENTA = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.26, 784.0, 880.0, 1046.5];
+
+  function play(fn) {
+    if (!enabled) return;
+    if (!ensure()) return;
+    try { fn(); } catch (e) { /* звук не должен ломать игру */ }
+  }
+
+  const SFX = {
+    get enabled() { return enabled; },
+    setEnabled(v) { enabled = !!v; if (v) ensure(); },
+    unlock() { if (enabled) ensure(); },
+
+    pick(i) {
+      play(() => {
+        const f = PENTA[Math.min(i, PENTA.length - 1)];
+        pluck(f, 0, { gain: 0.35, dur: 0.16 });
+        pluck(f * 2, 0, { gain: 0.06, dur: 0.1, type: 'sine' });
+      });
+    },
+
+    unpick(i) {
+      play(() => pluck(PENTA[Math.max(0, Math.min(i, PENTA.length - 1))] * 0.5, 0, { gain: 0.18, dur: 0.1 }));
+    },
+
+    word(n) {
+      play(() => {
+        const steps = Math.min(2 + n, 6);
+        for (let k = 0; k < steps; k++) {
+          pluck(PENTA[2 + k], k * 0.055, { gain: 0.32, dur: 0.22 });
+        }
+        pluck(PENTA[2 + steps] * 2, steps * 0.055, { gain: 0.1, dur: 0.5, type: 'sine' });
+        sparkle(steps * 0.055, { gain: 0.05, hp: 7000 });
+      });
+    },
+
+    bonus() {
+      play(() => {
+        pluck(880, 0, { glide: 1568, gain: 0.22, dur: 0.22, type: 'sine', cutoff: 8000 });
+        pluck(1318.5, 0.1, { gain: 0.18, dur: 0.3, type: 'sine' });
+        sparkle(0.06, { gain: 0.1, hp: 6000, dur: 0.3 });
+      });
+    },
+
+    coin(t0) {
+      play(() => {
+        pluck(1318.5, t0 || 0, { gain: 0.14, dur: 0.16, type: 'sine' });
+        pluck(1760, (t0 || 0) + 0.07, { gain: 0.12, dur: 0.22, type: 'sine' });
+      });
+    },
+
+    invalid() {
+      play(() => {
+        pluck(150, 0, { glide: 78, gain: 0.3, dur: 0.22, type: 'sawtooth', cutoff: 420 });
+      });
+    },
+
+    dup() {
+      play(() => {
+        pluck(523, 0, { gain: 0.12, dur: 0.06 });
+        pluck(523, 0.09, { gain: 0.12, dur: 0.06 });
+      });
+    },
+
+    hint() {
+      play(() => {
+        pluck(659, 0, { gain: 0.2, dur: 0.14 });
+        pluck(987, 0.08, { gain: 0.2, dur: 0.25, type: 'sine' });
+        sparkle(0.05, { gain: 0.06 });
+      });
+    },
+
+    click() {
+      play(() => pluck(392, 0, { gain: 0.1, dur: 0.05 }));
+    },
+
+    win() {
+      play(() => {
+        const chords = [
+          [261.63, 329.63, 392.0],
+          [293.66, 392.0, 493.88],
+          [329.63, 415.3, 523.25],
+          [392.0, 493.88, 659.26, 783.99],
+        ];
+        chords.forEach((ch, i) => {
+          ch.forEach(f => pluck(f, i * 0.16, { gain: 0.16, dur: i === chords.length - 1 ? 0.9 : 0.3 }));
+        });
+        sparkle(0.5, { gain: 0.08, dur: 0.5, hp: 5000 });
+        pluck(1046.5, 0.64, { gain: 0.1, dur: 0.8, type: 'sine' });
+      });
+    },
+  };
+
+  window.SFX = SFX;
+
+  function buzz(ms) { if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } }
+  window.HAPTIC = {
+    tap() { buzz(8); },
+    ok() { buzz([12, 30, 18]); },
+    no() { buzz(40); },
+  };
+})();
+</script>
+<script>
+/* Словокруг — прогресс в localStorage. */
+(function () {
+  'use strict';
+
+  const KEY = 'slovokrug.v1';
+
+  const DEFAULTS = {
+    coins: 100,
+    sound: true,
+    levels: {}, // { [idx]: { found: [], bonus: [], done: false } }
+  };
+
+  let state = null;
+
+  function load() {
+    if (state) return state;
+    try {
+      const raw = localStorage.getItem(KEY);
+      state = raw ? Object.assign({}, DEFAULTS, JSON.parse(raw)) : Object.assign({}, DEFAULTS);
+      if (!state.levels || typeof state.levels !== 'object') state.levels = {};
+    } catch (e) {
+      state = Object.assign({}, DEFAULTS);
+    }
+    return state;
+  }
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  function level(idx) {
+    const s = load();
+    if (!s.levels[idx]) s.levels[idx] = { found: [], bonus: [], done: false };
+    return s.levels[idx];
+  }
+
+  window.Store = {
+    get state() { return load(); },
+    save,
+    level,
+    addCoins(n) { load().coins = Math.max(0, load().coins + n); save(); },
+    setSound(v) { load().sound = !!v; save(); },
+  };
+})();
+</script>
+<script>
+/* Словокруг — колесо букв: pointer events, светящаяся линия, перемешивание. */
+(function () {
+  'use strict';
+
+  const NS = 'http://www.w3.org/2000/svg';
+
+  function Wheel(box, trace, callbacks) {
+    this.box = box;
+    this.trace = trace;
+    this.cb = callbacks; // { onPick(i, word), onUnpick(i, word), onSubmit(word) }
+    this.letters = [];   // { ch, el, x, y }
+    this.picked = [];    // индексы
+    this.pointerId = null;
+    this.pos = null;
+
+    box.addEventListener('pointerdown', e => this._down(e));
+    box.addEventListener('pointermove', e => this._move(e));
+    box.addEventListener('pointerup', e => this._up(e));
+    box.addEventListener('pointercancel', e => this._up(e));
+  }
+
+  Wheel.prototype.setLetters = function (chars) {
+    this.reset();
+    this.letters.forEach(l => l.el.remove());
+    this.letters = chars.map(ch => {
+      const el = document.createElement('div');
+      el.className = 'letter';
+      el.textContent = ch.toUpperCase();
+      this.box.appendChild(el);
+      return { ch, el, x: 0, y: 0 };
+    });
+    this.order = this.letters.map((_, i) => i);
+    this._size();
+    this.layout(this.order);
+  };
+
+  Wheel.prototype._size = function () {
+    const n = this.letters.length;
+    const size = n >= 7 ? 0.185 : n === 6 ? 0.2 : 0.215;
+    this.box.style.setProperty('--lsize', Math.round(this.box.clientWidth * size) + 'px');
+  };
+
+  /* Пересчитать размеры и позиции (после resize/поворота). */
+  Wheel.prototype.refresh = function () {
+    if (!this.letters.length) return;
+    this._size();
+    this.layout(this.order);
+  };
+
+  /* Расставить буквы по окружности (order — перестановка индексов). */
+  Wheel.prototype.layout = function (order) {
+    const n = this.letters.length;
+    if (!order) order = this.letters.map((_, i) => i);
+    this.order = order;
+    const W = this.box.clientWidth;
+    const R = W * 0.375;
+    order.forEach((li, slot) => {
+      const a = -Math.PI / 2 + slot * (2 * Math.PI / n);
+      const l = this.letters[li];
+      l.x = W / 2 + R * Math.cos(a);
+      l.y = W / 2 + R * Math.sin(a);
+      l.el.style.left = l.x + 'px';
+      l.el.style.top = l.y + 'px';
+    });
+  };
+
+  Wheel.prototype.shuffle = function () {
+    const n = this.letters.length;
+    const order = this.letters.map((_, i) => i);
+    for (let i = n - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const t = order[i]; order[i] = order[j]; order[j] = t;
+    }
+    this.layout(order);
+  };
+
+  Wheel.prototype.word = function () {
+    return this.picked.map(i => this.letters[i].ch).join('');
+  };
+
+  Wheel.prototype.reset = function () {
+    this.picked.forEach(i => this.letters[i].el.classList.remove('picked'));
+    this.picked = [];
+    this.pointerId = null;
+    this.pos = null;
+    this._draw();
+  };
+
+  Wheel.prototype._hit = function (e) {
+    const r = this.box.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+    this.pos = { x, y };
+    const size = this.letters.length ? this.letters[0].el.offsetWidth : 60;
+    let best = -1, bestD = size * 0.68; // радиус захвата: чуть больше видимого круга буквы
+    this.letters.forEach((l, i) => {
+      const d = Math.hypot(l.x - x, l.y - y);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    return best;
+  };
+
+  Wheel.prototype._down = function (e) {
+    if (this.pointerId !== null) return;
+    if (e.target.closest && e.target.closest('.shuffle')) return;
+    this.pointerId = e.pointerId;
+    try { this.box.setPointerCapture(e.pointerId); } catch (err) {}
+    const i = this._hit(e);
+    if (i >= 0) this._pick(i);
+    this._draw();
+  };
+
+  Wheel.prototype._move = function (e) {
+    if (e.pointerId !== this.pointerId) return;
+    const i = this._hit(e);
+    if (i >= 0) {
+      const pos = this.picked.indexOf(i);
+      if (pos === -1) {
+        this._pick(i);
+      } else if (pos === this.picked.length - 2) {
+        this._unpick(); // вернулись на предыдущую — отменяем последнюю
+      }
+    }
+    this._draw();
+  };
+
+  Wheel.prototype._up = function (e) {
+    if (e.pointerId !== this.pointerId) return;
+    const word = this.word();
+    const count = this.picked.length;
+    this.reset();
+    if (count > 0) this.cb.onSubmit(word);
+  };
+
+  Wheel.prototype._pick = function (i) {
+    this.picked.push(i);
+    this.letters[i].el.classList.add('picked');
+    this.cb.onPick(this.picked.length - 1, this.word());
+  };
+
+  Wheel.prototype._unpick = function () {
+    const i = this.picked.pop();
+    this.letters[i].el.classList.remove('picked');
+    this.cb.onUnpick(this.picked.length, this.word());
+  };
+
+  Wheel.prototype._draw = function () {
+    const svg = this.trace;
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    if (!this.picked.length) return;
+    const pts = this.picked.map(i => this.letters[i].x + ',' + this.letters[i].y);
+    if (this.pointerId !== null && this.pos) pts.push(this.pos.x + ',' + this.pos.y);
+    const mk = (w, o) => {
+      const p = document.createElementNS(NS, 'polyline');
+      p.setAttribute('points', pts.join(' '));
+      p.setAttribute('fill', 'none');
+      p.setAttribute('stroke', '#f2b64b');
+      p.setAttribute('stroke-width', w);
+      p.setAttribute('stroke-opacity', o);
+      p.setAttribute('stroke-linecap', 'round');
+      p.setAttribute('stroke-linejoin', 'round');
+      svg.appendChild(p);
+    };
+    mk(16, 0.18); // свечение
+    mk(7, 0.85);  // ядро линии
+  };
+
+  window.Wheel = Wheel;
+})();
+</script>
+<script>
+/* Словокруг — игровой экран: сетка, проверка слов, бонусы, подсказки. */
+(function () {
+  'use strict';
+
+  const $ = s => document.querySelector(s);
+
+  const COST_LAMP = 25;
+  const COST_TARGET = 50;
+  const BONUS_REWARD = 5;
+  const WIN_REWARD = 20;
+
+  /* ---------- общие UI-хелперы ---------- */
+
+  let toastTimer = null;
+  function toast(msg, gold) {
+    const el = $('#toast');
+    el.textContent = msg;
+    el.className = gold ? 'gold' : '';
+    el.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      el.classList.add('out');
+      toastTimer = setTimeout(() => { el.hidden = true; el.classList.remove('out'); }, 240);
+    }, 1400);
+  }
+
+  function refreshCoins(bumpIt) {
+    const c = window.Store.state.coins;
+    ['#home-coins', '#game-coins'].forEach(sel => {
+      const el = $(sel);
+      if (!el) return;
+      el.querySelector('b').textContent = c;
+      if (bumpIt) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+    });
+  }
+
+  /* Монета летит по дуге из точки (x,y) в счётчик монет. */
+  function flyCoin(x, y, delay) {
+    const fx = $('#fx');
+    const pill = $('#game-coins').getBoundingClientRect();
+    const tx = pill.left + pill.width / 2 - 8;
+    const ty = pill.top + pill.height / 2 - 8;
+    const coin = document.createElement('div');
+    coin.className = 'fly-coin';
+    coin.style.left = (x - 8) + 'px';
+    coin.style.top = (y - 8) + 'px';
+    fx.appendChild(coin);
+    const dx = tx - (x - 8), dy = ty - (y - 8);
+    const anim = coin.animate([
+      { transform: 'translate(0,0) scale(1)', opacity: 1 },
+      { transform: `translate(${dx * 0.4}px, ${dy * 0.25 - 60}px) scale(1.25)`, opacity: 1, offset: 0.45 },
+      { transform: `translate(${dx}px, ${dy}px) scale(.5)`, opacity: 0.9 },
+    ], { duration: 620, delay: delay || 0, easing: 'cubic-bezier(.3,.6,.4,1)', fill: 'backwards' });
+    anim.onfinish = () => {
+      coin.remove();
+      window.SFX.coin();
+      refreshCoins(true);
+    };
+  }
+
+  window.UIH = { toast, refreshCoins, flyCoin };
+
+  /* ---------- игра ---------- */
+
+  const Game = {
+    idx: 0,
+    level: null,
+    saved: null,
+    cells: new Map(),   // "x,y" -> { x, y, ch, el, open }
+    words: [],          // { w, x, y, d, cells[], found }
+    wheelCounts: null,
+    wheel: null,
+    targetMode: false,
+    finished: false,
+  };
+
+  function key(x, y) { return x + ',' + y; }
+
+  function counts(word) {
+    const m = {};
+    for (const ch of word) m[ch] = (m[ch] || 0) + 1;
+    return m;
+  }
+
+  function canFormFromWheel(word) {
+    const need = counts(word);
+    for (const ch in need) if (!Game.wheelCounts[ch] || Game.wheelCounts[ch] < need[ch]) return false;
+    return true;
+  }
+
+  Game.init = function () {
+    Game.wheel = new window.Wheel($('#wheel-box'), $('#trace'), {
+      onPick(i, word) {
+        window.SFX.pick(i);
+        window.HAPTIC.tap();
+        renderPreview(word);
+      },
+      onUnpick(i, word) {
+        window.SFX.unpick(i);
+        renderPreview(word);
+      },
+      onSubmit(word) { submit(word); },
+    });
+
+    $('#btn-shuffle').addEventListener('click', () => {
+      window.SFX.click();
+      Game.wheel.shuffle();
+    });
+    $('#hint-lamp').addEventListener('click', () => hintLamp());
+    $('#hint-target').addEventListener('click', () => hintTargetToggle());
+    $('#bonus-chip').addEventListener('click', () => {
+      const list = Game.saved.bonus;
+      if (!list.length) return;
+      const shown = list.slice(-5).map(w => w.toUpperCase()).join(' · ');
+      toast('✦ ' + shown + (list.length > 5 ? ' …' : ''), true);
+    });
+    $('#overlay').addEventListener('click', e => {
+      if (e.target === e.currentTarget) e.currentTarget.hidden = true; // посмотреть решённую сетку
+    });
+    window.addEventListener('resize', () => {
+      if (!Game.level) return;
+      layoutGrid();
+      Game.wheel.refresh();
+    });
+  };
+
+  Game.open = function (idx) {
+    Game.idx = idx;
+    Game.level = window.SK_LEVELS[idx];
+    Game.saved = window.Store.level(idx);
+    Game.finished = false;
+    Game.targetMode = false;
+    $('#hint-target').classList.remove('armed');
+
+    $('#lvl-title').textContent = 'Уровень ' + (idx + 1);
+    refreshCoins();
+
+    // сетка
+    const grid = $('#grid');
+    grid.innerHTML = '';
+    Game.cells = new Map();
+    Game.words = Game.level.w.map(entry => {
+      const [w, x, y, d] = entry;
+      const wordCells = [];
+      for (let i = 0; i < w.length; i++) {
+        const cx = x + (d === 0 ? i : 0);
+        const cy = y + (d === 1 ? i : 0);
+        const k = key(cx, cy);
+        let cell = Game.cells.get(k);
+        if (!cell) {
+          const el = document.createElement('div');
+          el.className = 'cell';
+          el.addEventListener('click', () => onCellTap(cell));
+          grid.appendChild(el);
+          cell = { x: cx, y: cy, ch: w[i], el, open: false };
+          Game.cells.set(k, cell);
+        }
+        wordCells.push(cell);
+      }
+      return { w, x, y, d, cells: wordCells, found: false };
+    });
+
+    layoutGrid();
+
+    // колесо
+    Game.wheelCounts = counts(Game.level.l.join(''));
+    Game.wheel.setLetters(Game.level.l);
+
+    // восстановление прогресса
+    for (const fw of Game.saved.found) {
+      const word = Game.words.find(x => x.w === fw && !x.found);
+      if (word) { word.found = true; word.cells.forEach(c => openCell(c, true)); }
+    }
+    updateBonusChip(false);
+    updateHintButtons();
+    renderPreview('');
+
+    if (Game.saved.done && allFound()) {
+      // пройденный уровень: показываем решённую сетку и сразу оверлей
+      setTimeout(() => showOverlay(true), 350);
+    }
+  };
+
+  function layoutGrid() {
+    const wrap = $('#grid-wrap');
+    const grid = $('#grid');
+    const cellsArr = [...Game.cells.values()];
+    if (!cellsArr.length) return;
+    const cols = Math.max(...cellsArr.map(c => c.x)) + 1;
+    const rows = Math.max(...cellsArr.map(c => c.y)) + 1;
+    const gap = 4;
+    const availW = wrap.clientWidth - 8;
+    const availH = wrap.clientHeight - 8;
+    const cell = Math.min(
+      cols <= 5 && rows <= 5 ? 58 : 52,
+      Math.floor((availW - (cols - 1) * gap) / cols),
+      Math.floor((availH - (rows - 1) * gap) / rows)
+    );
+    grid.style.setProperty('--cell', cell + 'px');
+    grid.style.width = (cols * cell + (cols - 1) * gap) + 'px';
+    grid.style.height = (rows * cell + (rows - 1) * gap) + 'px';
+    for (const c of cellsArr) {
+      c.el.style.left = (c.x * (cell + gap)) + 'px';
+      c.el.style.top = (c.y * (cell + gap)) + 'px';
+    }
+  }
+
+  function openCell(cell, instant, hinted) {
+    if (cell.open) return;
+    cell.open = true;
+    cell.el.textContent = cell.ch.toUpperCase();
+    cell.el.classList.remove('target-mode');
+    if (hinted) cell.el.classList.add('hinted');
+    if (instant) {
+      cell.el.style.animation = 'none';
+      cell.el.classList.add('open');
+    } else {
+      cell.el.classList.add('open');
+    }
+  }
+
+  function glowCell(cell) {
+    cell.el.classList.remove('glow');
+    void cell.el.offsetWidth;
+    cell.el.classList.add('glow');
+  }
+
+  function allFound() { return Game.words.every(w => w.found); }
+
+  function renderPreview(word) {
+    const pv = $('#preview');
+    pv.className = 'preview';
+    pv.innerHTML = '';
+    for (const ch of word) {
+      const t = document.createElement('div');
+      t.className = 'pv-tile';
+      t.textContent = ch.toUpperCase();
+      pv.appendChild(t);
+    }
+  }
+
+  function previewOut(cls) {
+    const pv = $('#preview');
+    pv.classList.add(cls);
+    setTimeout(() => renderPreview(''), cls === 'shake' ? 420 : 320);
+  }
+
+  /* ---------- проверка собранного слова ---------- */
+
+  function submit(word) {
+    if (word.length < 2) { renderPreview(''); return; }
+
+    const gridWord = Game.words.find(x => x.w === word);
+    if (gridWord) {
+      if (gridWord.found) {
+        window.SFX.dup();
+        toast('Уже найдено');
+        previewOut('dissolve');
+      } else {
+        foundWord(gridWord);
+        previewOut('absorb');
+      }
+      return;
+    }
+
+    if (word.length >= 3 && window.SK_DICT.has(word) && canFormFromWheel(word)) {
+      if (Game.saved.bonus.includes(word)) {
+        window.SFX.dup();
+        toast('Бонус уже найден');
+        previewOut('dissolve');
+      } else {
+        Game.saved.bonus.push(word);
+        window.Store.addCoins(BONUS_REWARD);
+        window.SFX.bonus();
+        window.HAPTIC.ok();
+        toast('✦ ' + word.toUpperCase() + '  +' + BONUS_REWARD, true);
+        updateBonusChip(true);
+        updateHintButtons();
+        const pv = $('#preview').getBoundingClientRect();
+        flyCoin(pv.left + pv.width / 2, pv.top + pv.height / 2, 120);
+        previewOut('absorb');
+      }
+      return;
+    }
+
+    window.SFX.invalid();
+    window.HAPTIC.no();
+    previewOut('shake');
+  }
+
+  function foundWord(gridWord) {
+    gridWord.found = true;
+    Game.saved.found.push(gridWord.w);
+    window.Store.save();
+    window.SFX.word(gridWord.w.length);
+    window.HAPTIC.ok();
+    gridWord.cells.forEach((c, i) => {
+      setTimeout(() => {
+        if (c.open) glowCell(c); else openCell(c);
+      }, i * 45);
+    });
+    // открытая буква могла достроить другие слова
+    setTimeout(() => checkAutoComplete(), gridWord.cells.length * 45 + 60);
+  }
+
+  /* Слова, у которых открылись все клетки (через пересечения или подсказки), считаются найденными. */
+  function checkAutoComplete() {
+    let extra = 0;
+    for (const w of Game.words) {
+      if (!w.found && w.cells.every(c => c.open)) {
+        w.found = true;
+        Game.saved.found.push(w.w);
+        w.cells.forEach(glowCell);
+        extra++;
+      }
+    }
+    if (extra) { window.Store.save(); window.SFX.word(3); }
+    updateHintButtons();
+    if (allFound() && !Game.finished) {
+      Game.finished = true;
+      setTimeout(levelComplete, 650);
+    }
+  }
+
+  function levelComplete() {
+    const first = !Game.saved.done;
+    Game.saved.done = true;
+    if (first) window.Store.addCoins(WIN_REWARD);
+    window.Store.save();
+    window.SFX.win();
+    window.HAPTIC.ok();
+    refreshCoins(true);
+    showOverlay(false, first);
+  }
+
+  function showOverlay(replay, rewarded) {
+    const ov = $('#overlay');
+    const last = Game.idx + 1 >= window.SK_LEVELS.length;
+    $('#ov-kicker').textContent = last ? 'игра пройдена' : replay ? 'уровень пройден ранее' : 'уровень пройден';
+    $('#ov-title').textContent = last ? 'Триумф!' : ['Отлично!', 'Блестяще!', 'Превосходно!', 'Мастерски!'][Game.idx % 4];
+    const bonus = Game.saved.bonus.length;
+    $('#ov-stats').innerHTML =
+      'Слов: <b>' + Game.words.length + '</b>' +
+      (bonus ? ' &nbsp;·&nbsp; бонусных: <b>' + bonus + '</b>' : '') +
+      (rewarded ? ' &nbsp;·&nbsp; награда: <b>+' + WIN_REWARD + '</b>' : '');
+    $('#ov-next').textContent = last ? 'К уровням' : 'Дальше';
+    $('#ov-home').hidden = last;
+    ov.hidden = false;
+    // перезапуск золотой волны
+    const pulse = ov.querySelector('.overlay-pulse');
+    pulse.style.animation = 'none';
+    void pulse.offsetWidth;
+    pulse.style.animation = '';
+  }
+
+  /* ---------- подсказки ---------- */
+
+  function closedCells() {
+    return [...Game.cells.values()].filter(c => !c.open);
+  }
+
+  function updateHintButtons() {
+    const empty = closedCells().length === 0;
+    const c = window.Store.state.coins;
+    $('#hint-lamp').classList.toggle('disabled', empty || c < COST_LAMP);
+    $('#hint-target').classList.toggle('disabled', empty || c < COST_TARGET);
+  }
+
+  function hintLamp() {
+    const pool = closedCells();
+    if (!pool.length) return;
+    if (window.Store.state.coins < COST_LAMP) { toast('Недостаточно монет'); window.SFX.invalid(); return; }
+    window.Store.addCoins(-COST_LAMP);
+    refreshCoins(true);
+    const cell = pool[Math.floor(Math.random() * pool.length)];
+    revealHint(cell);
+  }
+
+  function hintTargetToggle() {
+    if (Game.targetMode) { setTargetMode(false); return; }
+    const pool = closedCells();
+    if (!pool.length) return;
+    if (window.Store.state.coins < COST_TARGET) { toast('Недостаточно монет'); window.SFX.invalid(); return; }
+    setTargetMode(true);
+    toast('Выберите ячейку');
+    window.SFX.click();
+  }
+
+  function setTargetMode(on) {
+    Game.targetMode = on;
+    $('#hint-target').classList.toggle('armed', on);
+    closedCells().forEach(c => c.el.classList.toggle('target-mode', on));
+    if (!on) [...Game.cells.values()].forEach(c => c.el.classList.remove('target-mode'));
+  }
+
+  function onCellTap(cell) {
+    if (!Game.targetMode || cell.open) return;
+    if (window.Store.state.coins < COST_TARGET) { setTargetMode(false); toast('Недостаточно монет'); return; }
+    window.Store.addCoins(-COST_TARGET);
+    refreshCoins(true);
+    setTargetMode(false);
+    revealHint(cell);
+  }
+
+  function revealHint(cell) {
+    window.SFX.hint();
+    openCell(cell, false, true);
+    setTimeout(() => checkAutoComplete(), 350);
+  }
+
+  function updateBonusChip(bump) {
+    const chip = $('#bonus-chip');
+    const n = Game.saved.bonus.length;
+    chip.hidden = n === 0;
+    chip.querySelector('b').textContent = n;
+    if (bump) { chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump'); }
+    window.Store.save();
+  }
+
+  window.Game = Game;
+})();
+</script>
+<script>
+/* Словокруг — экраны, выбор уровня, звук, блокировка жестов. */
+(function () {
+  'use strict';
+
+  const $ = s => document.querySelector(s);
+
+  const ICON_ON = '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  const ICON_OFF = '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.5 9.5l5 5m0-5l-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+
+  function renderSound() {
+    const on = window.Store.state.sound;
+    ['#home-sound', '#btn-sound'].forEach(sel => {
+      const b = $(sel);
+      b.innerHTML = on ? ICON_ON : ICON_OFF;
+      b.classList.toggle('on', on);
+    });
+    window.SFX.setEnabled(on);
+  }
+
+  function toggleSound() {
+    window.Store.setSound(!window.Store.state.sound);
+    renderSound();
+    window.SFX.click();
+  }
+
+  function show(id) {
+    ['#home', '#game'].forEach(sel => {
+      const el = $(sel);
+      const on = sel === id;
+      if (on === !el.hidden) return;
+      el.hidden = !on;
+      if (on) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
+    });
+  }
+
+  function renderHome() {
+    window.UIH.refreshCoins();
+    const doneCount = Object.values(window.Store.state.levels).filter(l => l.done).length;
+    $('#home-progress').textContent = doneCount
+      ? 'пройдено ' + doneCount + ' из ' + window.SK_LEVELS.length
+      : window.SK_LEVELS.length + ' уровней';
+    const box = $('#levels');
+    box.innerHTML = '';
+    window.SK_LEVELS.forEach((_, i) => {
+      const st = window.Store.state.levels[i];
+      const b = document.createElement('button');
+      b.className = 'lvl' + (st && st.done ? ' done' : (st && st.found && st.found.length ? ' started' : ''));
+      b.textContent = i + 1;
+      b.addEventListener('click', () => {
+        window.SFX.click();
+        openLevel(i);
+      });
+      box.appendChild(b);
+    });
+  }
+
+  function openLevel(i) {
+    show('#game');
+    window.Game.open(i);
+  }
+
+  function goHome() {
+    $('#overlay').hidden = true;
+    renderHome();
+    show('#home');
+  }
+
+  function init() {
+    renderSound();
+    renderHome();
+    window.Game.init();
+
+    $('#home-sound').addEventListener('click', toggleSound);
+    $('#btn-sound').addEventListener('click', toggleSound);
+    $('#btn-back').addEventListener('click', () => { window.SFX.click(); goHome(); });
+
+    $('#ov-home').addEventListener('click', () => { window.SFX.click(); goHome(); });
+    $('#ov-next').addEventListener('click', () => {
+      window.SFX.click();
+      $('#overlay').hidden = true;
+      const next = window.Game.idx + 1;
+      if (next < window.SK_LEVELS.length) openLevel(next);
+      else goHome();
+    });
+
+    // разблокировка аудио первым касанием
+    const unlock = () => window.SFX.unlock();
+    document.addEventListener('pointerdown', unlock, { once: false });
+
+    // никакого скролла, зума и контекстных меню
+    document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+    document.addEventListener('gesturestart', e => e.preventDefault());
+    document.addEventListener('dblclick', e => e.preventDefault());
+    document.addEventListener('contextmenu', e => e.preventDefault());
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+</body>
+</html>

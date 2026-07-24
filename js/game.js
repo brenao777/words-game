@@ -335,14 +335,16 @@
 
   function showOverlay(replay, rewarded) {
     const ov = $('#overlay');
-    $('#ov-kicker').textContent = replay ? 'уровень пройден ранее' : 'уровень пройден';
-    $('#ov-title').textContent = ['Отлично!', 'Блестяще!', 'Превосходно!', 'Мастерски!'][Game.idx % 4];
+    const last = Game.idx + 1 >= window.SK_LEVELS.length;
+    $('#ov-kicker').textContent = last ? 'игра пройдена' : replay ? 'уровень пройден ранее' : 'уровень пройден';
+    $('#ov-title').textContent = last ? 'Триумф!' : ['Отлично!', 'Блестяще!', 'Превосходно!', 'Мастерски!'][Game.idx % 4];
     const bonus = Game.saved.bonus.length;
     $('#ov-stats').innerHTML =
       'Слов: <b>' + Game.words.length + '</b>' +
       (bonus ? ' &nbsp;·&nbsp; бонусных: <b>' + bonus + '</b>' : '') +
       (rewarded ? ' &nbsp;·&nbsp; награда: <b>+' + WIN_REWARD + '</b>' : '');
-    $('#ov-next').textContent = Game.idx + 1 < window.SK_LEVELS.length ? 'Дальше' : 'К уровням';
+    $('#ov-next').textContent = last ? 'К уровням' : 'Дальше';
+    $('#ov-home').hidden = last;
     ov.hidden = false;
     // перезапуск золотой волны
     const pulse = ov.querySelector('.overlay-pulse');

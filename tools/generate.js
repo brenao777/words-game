@@ -238,8 +238,8 @@ function buildLevel(spec, dict, dictSet, usedBases, globalUse, rng) {
   if (!scored.length) return null;
   const order = shuffled(scored, rng).sort((a, b) => b.subs.length - a.subs.length + (rng() - 0.5) * 6);
 
-  for (const cand of order.slice(0, 60)) {
-    for (let attempt = 0; attempt < 40; attempt++) {
+  for (const cand of order.slice(0, 120)) {
+    for (let attempt = 0; attempt < 80; attempt++) {
       // выбираем подслова: предпочитаем реже использованные, длину — вперемешку
       const pool = shuffled(cand.subs, rng)
         .sort((a, b) => ((globalUse.get(a) || 0) - (globalUse.get(b) || 0)) + (rng() - 0.5) * 2)
