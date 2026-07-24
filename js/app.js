@@ -35,6 +35,10 @@
 
   function renderHome() {
     window.UIH.refreshCoins();
+    const doneCount = Object.values(window.Store.state.levels).filter(l => l.done).length;
+    $('#home-progress').textContent = doneCount
+      ? 'пройдено ' + doneCount + ' из ' + window.SK_LEVELS.length
+      : window.SK_LEVELS.length + ' уровней';
     const box = $('#levels');
     box.innerHTML = '';
     window.SK_LEVELS.forEach((_, i) => {

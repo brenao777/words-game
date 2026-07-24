@@ -192,7 +192,7 @@
     const availW = wrap.clientWidth - 8;
     const availH = wrap.clientHeight - 8;
     const cell = Math.min(
-      52,
+      cols <= 5 && rows <= 5 ? 58 : 52,
       Math.floor((availW - (cols - 1) * gap) / cols),
       Math.floor((availH - (rows - 1) * gap) / rows)
     );
