@@ -777,3 +777,55 @@ i.coin {
   }
   .overlay-pulse { display: none; }
 }
+
+/* ---- тултип значения слова ---- */
+
+.word-tooltip {
+  position: absolute;
+  z-index: 60;
+  max-width: 260px;
+  padding: 14px 16px 12px;
+  border-radius: 14px;
+  background: linear-gradient(170deg, #1d2438, #151a2b);
+  border: 1px solid rgba(242, 182, 75, .35);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .55), 0 0 0 1px rgba(242, 182, 75, .1);
+  animation: tooltip-in .22s var(--spring);
+}
+
+@keyframes tooltip-in {
+  from { transform: scale(.85) translateY(6px); opacity: 0; }
+}
+
+.tooltip-word {
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: .08em;
+  color: var(--gold-hi);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  padding-right: 22px;
+}
+
+.tooltip-def {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.tooltip-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.tooltip-close:active { color: var(--gold-hi); }

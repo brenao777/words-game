@@ -589,7 +589,26 @@
   /* Тап по сетке в режиме «мишень»: берём ближайшую закрытую клетку,
    * чтобы промах в 4-пиксельный зазор не открывал соседнюю. */
   function onGridTap(e) {
-    if (!Game.targetMode) return;
+    // Тултип: если кликнули мимо тултипа — скрываем
+    const tooltip = $('#word-tooltip');
+    if (!tooltip.hidden && !tooltip.contains(e.target)) {
+      tooltip.hidden = true;
+    }
+
+    if (!Game.targetMode) {
+      // Проверяем клик по найденному слову для показа определения
+      const cellEl = e.target.closest('.cell');
+      if (cellEl && cellEl.classList.contains('open')) {
+        for (const word of Game.words) {
+          if (!word.found) continue;
+          if (word.cells.some(c => c.el === cellEl)) {
+            showDefinition(word);
+            return;
+          }
+        }
+      }
+      return;
+    }
     let best = null, bestD = Infinity;
     for (const c of closedCells()) {
       const r = c.el.getBoundingClientRect();
@@ -625,4 +644,36 @@
   }
 
   window.Game = Game;
+
+  /* ---------- тултип значения слова ---------- */
+
+  function showDefinition(word) {
+    const def = window.SK_DEFINITIONS && window.SK_DEFINITIONS[word.w];
+    if (!def) return;
+
+    const tooltip = $('#word-tooltip');
+    tooltip.querySelector('.tooltip-word').textContent = word.w.toUpperCase();
+    tooltip.querySelector('.tooltip-def').textContent = def;
+
+    // Позиция: по центру слова, сдвиг вверх
+    const boxes = word.cells.map(c => c.el.getBoundingClientRect());
+    const cx = boxes.reduce((s, b) => s + b.left + b.width / 2, 0) / boxes.length;
+    const cy = boxes.reduce((s, b) => s + b.top + b.height / 2, 0) / boxes.length;
+    const appRect = $('#app').getBoundingClientRect();
+    const top = cy - appRect.top - tooltip.offsetHeight - 12;
+    const left = cx - appRect.left - tooltip.offsetWidth / 2;
+    const clampedLeft = Math.max(8, Math.min(left, appRect.width - tooltip.offsetWidth - 8));
+
+    tooltip.style.top = Math.max(4, top) + 'px';
+    tooltip.style.left = clampedLeft + 'px';
+    tooltip.hidden = false;
+
+    window.SFX.click();
+  }
+
+  // Закрытие тултипа по кнопке ×
+  $('#word-tooltip .tooltip-close').addEventListener('click', (e) => {
+    e.stopPropagation();
+    $('#word-tooltip').hidden = true;
+  });
 })();

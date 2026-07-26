@@ -47,6 +47,13 @@
       <div class="grid" id="grid"></div>
     </div>
 
+    <!-- Тултип значения слова -->
+    <div class="word-tooltip" id="word-tooltip" role="tooltip" aria-live="polite" hidden>
+      <button class="tooltip-close" aria-label="Закрыть">×</button>
+      <div class="tooltip-word"></div>
+      <div class="tooltip-def"></div>
+    </div>
+
     <div class="preview-row">
       <button class="bonus-chip" id="bonus-chip" aria-label="Бонусных слов: 0" hidden><span class="star">✦</span><b>0</b></button>
       <div class="preview" id="preview" role="status" aria-live="polite" aria-atomic="true" aria-label="Слово не набрано"></div>
@@ -94,6 +101,7 @@
 
 <script src="js/levels.data.js"></script>
 <script src="js/dictionary.js"></script>
+<script src="js/definitions.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/particles.js"></script>
