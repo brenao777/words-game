@@ -39,6 +39,7 @@
         </div>
       </div>
       <div class="coins-pill small" id="game-coins" role="status" aria-live="polite" aria-atomic="true" aria-label="Баланс: 0 монет"><i class="coin"></i><b>0</b></div>
+      <div class="combo-indicator" id="combo-indicator" role="status" aria-live="polite" aria-atomic="true" hidden></div>
       <button class="icon-btn" id="btn-sound" aria-label="Выключить звук" aria-pressed="true"></button>
     </header>
 
@@ -87,6 +88,7 @@
 
   <div id="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
   <div class="fx-layer" id="fx" aria-hidden="true"></div>
+  <canvas id="particles-canvas" aria-hidden="true"></canvas>
   <div id="rotate"><div><div class="ico">⟳</div>Поверните устройство<br>вертикально</div></div>
 </div>
 
@@ -94,6 +96,8 @@
 <script src="js/dictionary.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/storage.js"></script>
+<script src="js/particles.js"></script>
+<script src="js/combo.js"></script>
 <script src="js/wheel.js"></script>
 <script src="js/game.js"></script>
 <script src="js/app.js"></script>

@@ -108,6 +108,54 @@ button:focus-visible {
   letter-spacing: .02em;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---- комбо-индикатор ---- */
+
+.combo-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(242, 182, 75, .12);
+  border: 1px solid rgba(242, 182, 75, .3);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: .06em;
+  color: var(--gold-hi);
+  white-space: nowrap;
+  animation: combo-breathe 0.8s ease-in-out infinite;
+}
+.combo-indicator b {
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+}
+.combo-indicator.combo-pop {
+  animation: none;
+}
+.combo-indicator.combo-pop b {
+  animation: combo-num-pop 0.5s var(--spring);
+}
+
+@keyframes combo-breathe {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 8px rgba(242, 182, 75, .15); }
+  50%      { transform: scale(1.06); box-shadow: 0 0 16px rgba(242, 182, 75, .3); }
+}
+
+@keyframes combo-num-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.55); }
+  100% { transform: scale(1); }
+}
+
+/* ---- canvas частиц ---- */
+
+#particles-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 51;
+  pointer-events: none;
+}
 .coins-pill.small { padding: 6px 12px 6px 9px; font-size: 14px; }
 .coins-pill.bump b { animation: bump .4s var(--spring); display: inline-block; }
 .coins-pill.rewarding {

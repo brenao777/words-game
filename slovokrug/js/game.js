@@ -158,6 +158,9 @@
       onSubmit(word) { submit(word); },
     });
 
+    window.Particles.init($('#particles-canvas'));
+    window.Combo.init($('#combo-indicator'));
+
     $('#btn-shuffle').addEventListener('click', () => {
       window.SFX.click();
       Game.wheel.shuffle();
@@ -206,6 +209,7 @@
     Game.saved = window.Store.level(idx);
     Game.finished = false;
     Game.targetMode = false;
+    window.Combo.levelReset();
     $('#hint-target').classList.remove('armed');
     $('#hint-target').setAttribute('aria-pressed', 'false');
 
@@ -269,6 +273,7 @@
     Game.gen++;
     setTargetMode(false);
     hideCoach(false); // подсказку не «засчитываем», если игрок ушёл, не тронув буквы
+    window.Combo.levelReset();
     $('#fx').replaceChildren();
     $('#game-coins').classList.remove('rewarding');
     refreshCoins();
@@ -416,6 +421,7 @@
         toast('Уже найдено');
         previewOut('dissolve');
       } else {
+        window.Combo.grow();
         foundWord(gridWord);
         previewOut('absorb');
       }
@@ -429,19 +435,24 @@
         previewOut('dissolve');
       } else {
         Game.saved.bonus.push(word);
-        window.Store.addCoins(BONUS_REWARD);
+        window.Combo.grow();
+        const reward = BONUS_REWARD * window.Combo.multiplier;
+        window.Store.addCoins(reward);
         window.SFX.bonus();
         window.HAPTIC.ok();
-        toast('✦ ' + word.toUpperCase() + '  +' + BONUS_REWARD, true);
+        const comboLabel = window.Combo.multiplier > 1 ? ' ×' + window.Combo.multiplier : '';
+        toast('✦ ' + word.toUpperCase() + '  +' + reward + comboLabel, true);
         updateBonusChip(true);
         updateHintButtons();
         const pv = $('#preview').getBoundingClientRect();
-        animateCoinReward(pv.left + pv.width / 2, pv.top + pv.height / 2, BONUS_REWARD, 4, 100);
+        animateCoinReward(pv.left + pv.width / 2, pv.top + pv.height / 2, reward, 4, 100);
         previewOut('absorb');
       }
       return;
     }
 
+    // Невалидное слово — сброс комбо
+    window.Combo.reset();
     window.SFX.invalid();
     window.HAPTIC.no();
     previewOut('shake');
@@ -450,7 +461,8 @@
   function foundWord(gridWord) {
     gridWord.found = true;
     Game.saved.found.push(gridWord.w);
-    window.Store.addCoins(WORD_REWARD);
+    const reward = WORD_REWARD * window.Combo.multiplier;
+    window.Store.addCoins(reward);
     updateLevelProgress(true);
     updateHintButtons();
     window.SFX.word(gridWord.w.length);
@@ -462,12 +474,14 @@
     );
     origin.x /= boxes.length;
     origin.y /= boxes.length;
+    // взрыв частиц из центра слова
+    window.Particles.burst(origin.x, origin.y, 14);
     gridWord.cells.forEach((c, i) => {
       later(() => {
         if (c.open) glowCell(c); else openCell(c);
       }, i * 45);
     });
-    animateCoinReward(origin.x, origin.y, WORD_REWARD, 3, gridWord.cells.length * 45 + 80);
+    animateCoinReward(origin.x, origin.y, reward, 3, gridWord.cells.length * 45 + 80);
     // открытая буква могла достроить другие слова
     later(() => checkAutoComplete(), gridWord.cells.length * 45 + 60);
   }

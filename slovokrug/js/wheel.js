@@ -108,6 +108,10 @@
     const i = this._hit(e);
     if (i >= 0) this._pick(i);
     this._draw();
+    // шлейф частиц
+    const app = document.querySelector('#app');
+    const ar = app.getBoundingClientRect();
+    window.Particles.trail(e.clientX - ar.left, e.clientY - ar.top);
   };
 
   Wheel.prototype._move = function (e) {
@@ -122,6 +126,10 @@
       }
     }
     this._draw();
+    // шлейф частиц
+    const app = document.querySelector('#app');
+    const ar = app.getBoundingClientRect();
+    window.Particles.trail(e.clientX - ar.left, e.clientY - ar.top);
   };
 
   Wheel.prototype._up = function (e) {
