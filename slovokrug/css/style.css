@@ -110,6 +110,10 @@ button:focus-visible {
 }
 .coins-pill.small { padding: 6px 12px 6px 9px; font-size: 14px; }
 .coins-pill.bump b { animation: bump .4s var(--spring); display: inline-block; }
+.coins-pill.rewarding {
+  border-color: rgba(242, 182, 75, .5);
+  box-shadow: 0 0 18px rgba(242, 182, 75, .14);
+}
 @keyframes bump { 40% { transform: scale(1.35); color: var(--gold-hi); } }
 
 i.coin {
@@ -651,7 +655,34 @@ i.coin {
   height: 16px;
   border-radius: 50%;
   background: radial-gradient(circle at 32% 30%, var(--gold-hi), var(--gold) 58%, #b97f22);
+  border: 1px solid rgba(255, 235, 174, .65);
   box-shadow: 0 0 10px rgba(242, 182, 75, .7);
+  will-change: transform, opacity;
+}
+
+.fly-coin::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  border: 1px solid rgba(116, 72, 13, .36);
+}
+
+.coin-reward {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  color: var(--gold-hi);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: .02em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .8), 0 0 14px rgba(242, 182, 75, .55);
+  animation: coin-reward-rise .8s var(--spring) forwards;
+}
+
+@keyframes coin-reward-rise {
+  0% { transform: translate(-50%, 8px) scale(.65); opacity: 0; }
+  28% { transform: translate(-50%, -8px) scale(1.15); opacity: 1; }
+  100% { transform: translate(-50%, -34px) scale(.92); opacity: 0; }
 }
 
 @media (max-height: 700px) {

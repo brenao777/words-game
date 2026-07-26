@@ -41,3 +41,12 @@ test('toggle controls expose their initial state', () => {
   assert.match(openingTag('hint-lamp'), /\baria-disabled="false"/);
   assert.match(openingTag('hint-target'), /\baria-pressed="false"/);
 });
+
+test('animated coin balance remains accessible', () => {
+  const coins = openingTag('game-coins');
+  assert.match(coins, /\brole="status"/);
+  assert.match(coins, /\baria-live="polite"/);
+  assert.match(coins, /\baria-atomic="true"/);
+  assert.match(coins, /\baria-label="Баланс: 0 монет"/);
+  assert.match(openingTag('fx'), /\baria-hidden="true"/);
+});
