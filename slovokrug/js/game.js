@@ -589,10 +589,10 @@
   /* Тап по сетке в режиме «мишень»: берём ближайшую закрытую клетку,
    * чтобы промах в 4-пиксельный зазор не открывал соседнюю. */
   function onGridTap(e) {
-    // Тултип: если кликнули мимо тултипа — скрываем
+    // Тултип: если кликнули мимо него — скрываем.
     const tooltip = $('#word-tooltip');
     if (!tooltip.hidden && !tooltip.contains(e.target)) {
-      tooltip.hidden = true;
+      hideDefinition();
     }
 
     if (!Game.targetMode) {
@@ -654,8 +654,11 @@
     const tooltip = $('#word-tooltip');
     tooltip.querySelector('.tooltip-word').textContent = word.w.toUpperCase();
     tooltip.querySelector('.tooltip-def').textContent = def;
+    tooltip.hidden = false;
+    tooltip.classList.remove('is-hiding', 'is-visible');
 
-    // Позиция: по центру слова, сдвиг вверх
+    // Позиция: по центру слова, сдвиг вверх. Сначала показываем элемент,
+    // чтобы его размеры были доступны для точного расчёта.
     const boxes = word.cells.map(c => c.el.getBoundingClientRect());
     const cx = boxes.reduce((s, b) => s + b.left + b.width / 2, 0) / boxes.length;
     const cy = boxes.reduce((s, b) => s + b.top + b.height / 2, 0) / boxes.length;
@@ -666,14 +669,25 @@
 
     tooltip.style.top = Math.max(4, top) + 'px';
     tooltip.style.left = clampedLeft + 'px';
-    tooltip.hidden = false;
+    void tooltip.offsetWidth; // фиксируем начальное состояние для анимации появления
+    tooltip.classList.add('is-visible');
 
     window.SFX.click();
   }
 
-  // Закрытие тултипа по кнопке ×
-  $('#word-tooltip .tooltip-close').addEventListener('click', (e) => {
-    e.stopPropagation();
-    $('#word-tooltip').hidden = true;
-  });
+  function hideDefinition() {
+    const tooltip = $('#word-tooltip');
+    if (tooltip.hidden || tooltip.classList.contains('is-hiding')) return;
+    tooltip.classList.remove('is-visible');
+    tooltip.classList.add('is-hiding');
+    window.setTimeout(() => {
+      if (!tooltip.classList.contains('is-visible')) {
+        tooltip.hidden = true;
+        tooltip.classList.remove('is-hiding');
+      }
+    }, 180);
+  }
+
+  // Тап по любой области подсказки (включая кнопку ×) закрывает её.
+  $('#word-tooltip').addEventListener('click', hideDefinition);
 })();

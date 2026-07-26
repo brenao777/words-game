@@ -786,14 +786,27 @@ i.coin {
   max-width: 260px;
   padding: 14px 16px 12px;
   border-radius: 14px;
-  background: linear-gradient(170deg, #1d2438, #151a2b);
+  background: linear-gradient(170deg, rgba(29, 36, 56, .84), rgba(21, 26, 43, .84));
   border: 1px solid rgba(242, 182, 75, .35);
   box-shadow: 0 12px 32px rgba(0, 0, 0, .55), 0 0 0 1px rgba(242, 182, 75, .1);
-  animation: tooltip-in .22s var(--spring);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  transform: scale(.85) translateY(6px);
+  pointer-events: none;
+  transition: opacity .18s var(--ease), transform .18s var(--spring);
 }
 
-@keyframes tooltip-in {
-  from { transform: scale(.85) translateY(6px); opacity: 0; }
+.word-tooltip.is-visible {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.word-tooltip.is-hiding {
+  opacity: 0;
+  transform: scale(.9) translateY(4px);
+  pointer-events: none;
 }
 
 .tooltip-word {

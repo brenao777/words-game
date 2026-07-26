@@ -50,3 +50,15 @@ test('animated coin balance remains accessible', () => {
   assert.match(coins, /\baria-label="Баланс: 0 монет"/);
   assert.match(openingTag('fx'), /\baria-hidden="true"/);
 });
+
+test('word tooltip is translucent and uses animated tap-to-dismiss states', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'css', 'style.css'), 'utf8');
+  const game = fs.readFileSync(path.join(__dirname, '..', 'js', 'game.js'), 'utf8');
+
+  assert.match(css, /\.word-tooltip\s*\{[\s\S]*background:\s*linear-gradient\([^;]*rgba\(/);
+  assert.match(css, /\.word-tooltip\s*\{[\s\S]*transition:\s*opacity/);
+  assert.match(css, /\.word-tooltip\.is-visible\s*\{[\s\S]*pointer-events:\s*auto/);
+  assert.match(css, /\.word-tooltip\.is-hiding\s*\{/);
+  assert.match(game, /function hideDefinition\(\)/);
+  assert.match(game, /\$\('#word-tooltip'\)\.addEventListener\('click', hideDefinition\)/);
+});
