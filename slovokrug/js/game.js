@@ -6,6 +6,7 @@
 
   const COST_LAMP = 25;
   const COST_TARGET = 50;
+  const WORD_REWARD = 3;
   const BONUS_REWARD = 5;
   const WIN_REWARD = 20;
 
@@ -30,35 +31,81 @@
       const el = $(sel);
       if (!el) return;
       el.querySelector('b').textContent = c;
+      el.setAttribute('aria-label', 'Баланс: ' + c + ' монет');
       if (bumpIt) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
     });
   }
 
   /* Монета летит по дуге из точки (x,y) в счётчик монет. */
-  function flyCoin(x, y, delay) {
+  function flyCoin(x, y, delay, onFinish) {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      if (onFinish) onFinish();
+      return;
+    }
     const fx = $('#fx');
+    const layer = fx.getBoundingClientRect();
     const pill = $('#game-coins').getBoundingClientRect();
-    const tx = pill.left + pill.width / 2 - 8;
-    const ty = pill.top + pill.height / 2 - 8;
+    const sx = x - layer.left;
+    const sy = y - layer.top;
+    const tx = pill.left + pill.width / 2 - layer.left - 8;
+    const ty = pill.top + pill.height / 2 - layer.top - 8;
     const coin = document.createElement('div');
     coin.className = 'fly-coin';
-    coin.style.left = (x - 8) + 'px';
-    coin.style.top = (y - 8) + 'px';
+    coin.style.left = (sx - 8) + 'px';
+    coin.style.top = (sy - 8) + 'px';
     fx.appendChild(coin);
-    const dx = tx - (x - 8), dy = ty - (y - 8);
+    const dx = tx - (sx - 8), dy = ty - (sy - 8);
     const anim = coin.animate([
-      { transform: 'translate(0,0) scale(1)', opacity: 1 },
-      { transform: `translate(${dx * 0.4}px, ${dy * 0.25 - 60}px) scale(1.25)`, opacity: 1, offset: 0.45 },
-      { transform: `translate(${dx}px, ${dy}px) scale(.5)`, opacity: 0.9 },
-    ], { duration: 620, delay: delay || 0, easing: 'cubic-bezier(.3,.6,.4,1)', fill: 'backwards' });
+      { transform: 'translate(0,0) rotate(0deg) scale(.7)', opacity: 0 },
+      { transform: `translate(${dx * 0.18}px, ${dy * 0.08 - 34}px) rotate(80deg) scale(1.15)`, opacity: 1, offset: 0.22 },
+      { transform: `translate(${dx * 0.5}px, ${dy * 0.28 - 64}px) rotate(220deg) scale(1.3)`, opacity: 1, offset: 0.5 },
+      { transform: `translate(${dx}px, ${dy}px) rotate(540deg) scale(.45)`, opacity: 0.92 },
+    ], { duration: 650, delay: delay || 0, easing: 'cubic-bezier(.22,.72,.32,1)', fill: 'backwards' });
     anim.onfinish = () => {
       coin.remove();
-      window.SFX.coin();
-      refreshCoins(true);
+      if (onFinish) onFinish();
     };
   }
 
-  window.UIH = { toast, refreshCoins, flyCoin };
+  function animateCoinReward(x, y, amount, particleCount, startDelay) {
+    const generation = Game.gen;
+    const fx = $('#fx');
+    const count = Math.max(1, Math.min(particleCount || 3, amount));
+    const label = document.createElement('div');
+    label.className = 'coin-reward';
+    label.setAttribute('aria-hidden', 'true');
+    label.textContent = '+' + amount;
+    const layer = fx.getBoundingClientRect();
+    label.style.left = (x - layer.left) + 'px';
+    label.style.top = (y - layer.top) + 'px';
+    fx.appendChild(label);
+    setTimeout(() => label.remove(), 1000 + (startDelay || 0));
+
+    let arrived = 0;
+    const pill = $('#game-coins');
+    pill.classList.add('rewarding');
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
+      const spread = count === 1 ? 0 : 10;
+      flyCoin(
+        x + Math.cos(angle) * spread,
+        y + Math.sin(angle) * spread,
+        (startDelay || 0) + i * 85,
+        () => {
+          if (generation !== Game.gen) return;
+          arrived++;
+          window.SFX.coin();
+          if (arrived === count) {
+            pill.classList.remove('rewarding');
+            refreshCoins(true);
+            updateHintButtons();
+          }
+        },
+      );
+    }
+  }
+
+  window.UIH = { toast, refreshCoins, animateCoinReward };
 
   /* ---------- игра ---------- */
 
@@ -222,6 +269,9 @@
     Game.gen++;
     setTargetMode(false);
     hideCoach(false); // подсказку не «засчитываем», если игрок ушёл, не тронув буквы
+    $('#fx').replaceChildren();
+    $('#game-coins').classList.remove('rewarding');
+    refreshCoins();
   };
 
   function layoutGrid() {
@@ -386,7 +436,7 @@
         updateBonusChip(true);
         updateHintButtons();
         const pv = $('#preview').getBoundingClientRect();
-        flyCoin(pv.left + pv.width / 2, pv.top + pv.height / 2, 120);
+        animateCoinReward(pv.left + pv.width / 2, pv.top + pv.height / 2, BONUS_REWARD, 4, 100);
         previewOut('absorb');
       }
       return;
@@ -400,15 +450,24 @@
   function foundWord(gridWord) {
     gridWord.found = true;
     Game.saved.found.push(gridWord.w);
+    window.Store.addCoins(WORD_REWARD);
     updateLevelProgress(true);
-    window.Store.save();
+    updateHintButtons();
     window.SFX.word(gridWord.w.length);
     window.HAPTIC.ok();
+    const boxes = gridWord.cells.map(c => c.el.getBoundingClientRect());
+    const origin = boxes.reduce(
+      (point, box) => ({ x: point.x + box.left + box.width / 2, y: point.y + box.top + box.height / 2 }),
+      { x: 0, y: 0 },
+    );
+    origin.x /= boxes.length;
+    origin.y /= boxes.length;
     gridWord.cells.forEach((c, i) => {
       later(() => {
         if (c.open) glowCell(c); else openCell(c);
       }, i * 45);
     });
+    animateCoinReward(origin.x, origin.y, WORD_REWARD, 3, gridWord.cells.length * 45 + 80);
     // открытая буква могла достроить другие слова
     later(() => checkAutoComplete(), gridWord.cells.length * 45 + 60);
   }
@@ -432,7 +491,7 @@
     updateHintButtons();
     if (allFound() && !Game.finished) {
       Game.finished = true;
-      later(levelComplete, 650);
+      later(levelComplete, 1050);
     }
   }
 

@@ -22,15 +22,25 @@ const DICT = require('./dictionary.ru.js');
 const MAX_W = 7;
 const MAX_H = 8;
 const SEED = 20260724;
+const REPEAT_COOLDOWN = 8;
+
+/*
+ * Словарь бонусов намеренно шире словаря сеток. В сами уровни не попадают
+ * слова, которые выбиваются из лёгкого семейного тона или звучат как
+ * медицинская памятка. Они всё ещё засчитываются как корректные бонусы.
+ */
+const GRID_BLOCKLIST = new Set([
+  'ангина', 'астма', 'болезнь', 'бронхит', 'вывих', 'грыжа', 'диабет',
+  'диагноз', 'изжога', 'инфаркт', 'инсульт', 'кариес', 'наркоз', 'простуда',
+  'травма', 'укол',
+]);
 
 /* План сложности: 50 уровней. */
 const PLAN = [];
 function plan(n, len, words) { for (let i = 0; i < n; i++) PLAN.push({ len, words }); }
-plan(4, 5, 4);   // 1–4
-plan(8, 5, 5);   // 5–12
+plan(12, 5, 4);  // 1–12 — короткое знакомство без перегруза мелкими словами
 plan(8, 6, 5);   // 13–20
-plan(8, 6, 6);   // 21–28
-plan(8, 6, 7);   // 29–36
+plan(16, 6, 6);  // 21–36
 plan(7, 7, 7);   // 37–43
 plan(4, 7, 8);   // 44–47
 plan(3, 7, 9);   // 48–50
@@ -226,12 +236,29 @@ function validateLevel(level, dictSet) {
 
 /* ---------- сборка уровня ---------- */
 
-function buildLevel(spec, dict, dictSet, usedBases, globalUse, rng) {
+function maxGlobalUses(word) {
+  return word.length === 3 ? 3 : 2;
+}
+
+function isAvailable(word, globalUse, lastUse, levelIndex) {
+  const used = globalUse.get(word) || 0;
+  if (used >= maxGlobalUses(word)) return false;
+  const previousLevel = lastUse.get(word);
+  return previousLevel === undefined || levelIndex - previousLevel >= REPEAT_COOLDOWN;
+}
+
+function buildLevel(spec, dict, dictSet, usedBases, globalUse, lastUse, levelIndex, rng) {
   const bases = dict.filter(w => w.length === spec.len && !usedBases.has(w));
   // ранжируем базовые слова по богатству подслов
   const scored = bases.map(b => {
     const bc = counts(b);
-    const subs = dict.filter(w => w !== b && w.length >= 3 && w.length < b.length && canForm(w, bc));
+    const subs = dict.filter(w =>
+      w !== b &&
+      w.length >= 3 &&
+      w.length < b.length &&
+      isAvailable(w, globalUse, lastUse, levelIndex) &&
+      canForm(w, bc)
+    );
     return { b, subs };
   }).filter(s => s.subs.length >= spec.words + 1);
 
@@ -240,10 +267,16 @@ function buildLevel(spec, dict, dictSet, usedBases, globalUse, rng) {
 
   for (const cand of order.slice(0, 120)) {
     for (let attempt = 0; attempt < 80; attempt++) {
-      // выбираем подслова: предпочитаем реже использованные, длину — вперемешку
+      // Предпочитаем новые и более содержательные слова. Трёхбуквенные нужны
+      // для красивых пересечений, но больше не должны заполнять всю сетку.
       const pool = shuffled(cand.subs, rng)
-        .sort((a, b) => ((globalUse.get(a) || 0) - (globalUse.get(b) || 0)) + (rng() - 0.5) * 2)
-        .slice(0, Math.min(cand.subs.length, spec.words * 3));
+        .sort((a, b) => {
+          const usePenalty = ((globalUse.get(a) || 0) - (globalUse.get(b) || 0)) * 100;
+          const shortPenalty = (a.length === 3 ? 12 : 0) - (b.length === 3 ? 12 : 0);
+          const lengthPreference = (b.length - a.length) * 3;
+          return usePenalty + shortPenalty + lengthPreference + (rng() - 0.5) * 3;
+        })
+        .slice(0, Math.min(cand.subs.length, spec.words * 4));
       const chosen = shuffled(pool, rng).slice(0, spec.words - 1);
       if (chosen.length < spec.words - 1) continue;
 
@@ -259,7 +292,10 @@ function buildLevel(spec, dict, dictSet, usedBases, globalUse, rng) {
       if (errs.length) continue;
 
       usedBases.add(cand.b);
-      for (const p of placements) globalUse.set(p.w, (globalUse.get(p.w) || 0) + 1);
+      for (const p of placements) {
+        globalUse.set(p.w, (globalUse.get(p.w) || 0) + 1);
+        lastUse.set(p.w, levelIndex);
+      }
       return level;
     }
   }
@@ -273,21 +309,23 @@ function main() {
     .filter(w => /^[а-я]{3,7}$/.test(w))
     .sort();
   const dictSet = new Set(dict);
+  const gridDict = dict.filter(w => !GRID_BLOCKLIST.has(w));
   console.log('Словарь: ' + dict.length + ' слов');
 
   const rng = mulberry32(SEED);
   const usedBases = new Set();
   const globalUse = new Map();
+  const lastUse = new Map();
   const levels = [];
   const stats = [];
 
   for (let i = 0; i < PLAN.length; i++) {
     let spec = { ...PLAN[i] };
-    let lvl = buildLevel(spec, dict, dictSet, usedBases, globalUse, rng);
+    let lvl = buildLevel(spec, gridDict, dictSet, usedBases, globalUse, lastUse, i, rng);
     // мягкая деградация: чуть меньше слов, если не вышло
     while (!lvl && spec.words > 3) {
       spec.words--;
-      lvl = buildLevel(spec, dict, dictSet, usedBases, globalUse, rng);
+      lvl = buildLevel(spec, gridDict, dictSet, usedBases, globalUse, lastUse, i, rng);
     }
     if (!lvl) {
       console.error('Не удалось построить уровень ' + (i + 1) + ' (' + PLAN[i].len + ' букв, ' + PLAN[i].words + ' слов)');
@@ -313,6 +351,13 @@ function main() {
   });
   if (bad) process.exit(1);
 
+  const repeated = [...globalUse].filter(([, n]) => n > 1);
+  const overused = [...globalUse].filter(([w, n]) => n > maxGlobalUses(w));
+  if (overused.length) {
+    console.error('Превышен лимит повторов: ' + overused.map(([w, n]) => w + '×' + n).join(', '));
+    process.exit(1);
+  }
+
   for (const s of stats) {
     const drop = s.words < s.planWords ? '  (план был ' + s.planWords + ')' : '';
     console.log(
@@ -322,7 +367,10 @@ function main() {
   }
 
   const short = stats.filter(s => s.words < s.planWords).length;
-  console.log('Все 50 уровней валидны.' + (short ? ' Уровней с урезанным планом: ' + short : ''));
+  console.log(
+    'Все 50 уровней валидны. С допустимым интервалом повторяются ' + repeated.length +
+    ' слов.' + (short ? ' Уровней с урезанным планом: ' + short : '')
+  );
 
   // запись данных
   const levelsJs = '/* Сгенерировано tools/generate.js — не редактировать вручную. */\n' +
