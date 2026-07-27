@@ -37,6 +37,10 @@
       bonus: uniqueStrings(raw.bonus),
       hinted: uniqueStrings(raw.hinted, item => /^\d+,\d+$/.test(item)),
       done: raw.done === true,
+      // Старые сохранения восстанавливают звёзды по уже сохранённым подсказкам и бонусам.
+      stars: raw.done === true
+        ? (Number.isInteger(raw.stars) && raw.stars >= 1 && raw.stars <= 3 ? raw.stars : starsFor(raw))
+        : 0,
     };
   }
 
@@ -77,10 +81,25 @@
     return s.levels[idx];
   }
 
+  function starsFor(levelState) {
+    const level = isRecord(levelState) ? levelState : {};
+    const usedHint = Array.isArray(level.hinted) && level.hinted.length > 0;
+    const foundBonus = Array.isArray(level.bonus) && level.bonus.length > 0;
+    return 1 + (usedHint ? 0 : 1) + (foundBonus ? 1 : 0);
+  }
+
+  function refreshStars(levelState) {
+    if (!isRecord(levelState) || levelState.done !== true) return;
+    levelState.stars = starsFor(levelState);
+    save();
+  }
+
   window.Store = {
     get state() { return load(); },
     save,
     level,
+    starsFor,
+    refreshStars,
     addCoins(n) {
       if (!Number.isFinite(n)) return;
       const s = load();

@@ -47,13 +47,21 @@
       const st = window.Store.state.levels[i];
       const b = document.createElement('button');
       b.className = 'lvl' + (st && st.done ? ' done' : (st && st.found && st.found.length ? ' started' : ''));
-      b.textContent = i + 1;
+      b.append(document.createTextNode(i + 1));
+      const stars = st && st.done ? (st.stars || 1) : 0;
+      if (stars) {
+        const mark = document.createElement('span');
+        mark.className = 'lvl-stars';
+        mark.textContent = '★'.repeat(stars);
+        mark.setAttribute('aria-hidden', 'true');
+        b.appendChild(mark);
+      }
       const stateLabel = st && st.done
         ? 'пройден'
         : st && st.found && st.found.length
           ? 'найдено ' + st.found.length + ' из ' + level.w.length + ' слов'
           : 'не начат';
-      b.setAttribute('aria-label', 'Уровень ' + (i + 1) + ', ' + stateLabel);
+      b.setAttribute('aria-label', 'Уровень ' + (i + 1) + ', ' + stateLabel + (stars ? ', ' + stars + ' ' + (stars === 1 ? 'звезда' : 'звезды') : ''));
       b.addEventListener('click', () => {
         window.SFX.click();
         openLevel(i);

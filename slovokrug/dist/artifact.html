@@ -251,6 +251,16 @@ i.coin {
   box-shadow: 0 4px 16px rgba(242, 182, 75, .22);
 }
 .lvl.done::after { display: none; }
+.lvl-stars {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  letter-spacing: -1px;
+  color: #3a2c10;
+  white-space: nowrap;
+}
 
 /* ============ Игровой экран ============ */
 
@@ -644,6 +654,14 @@ i.coin {
   margin: 8px 0 20px;
 }
 .overlay-stats b { color: var(--gold-hi); font-variant-numeric: tabular-nums; }
+.overlay-stars { min-height: 35px; margin: 4px 0 2px; font-size: 29px; letter-spacing: 3px; }
+.overlay-star { display: inline-block; color: rgba(255, 255, 255, .15); text-shadow: none; }
+.overlay-star.earned { color: var(--gold-hi); text-shadow: 0 0 16px rgba(242, 182, 75, .6); animation: star-pop .52s var(--spring) var(--star-delay) both; }
+@keyframes star-pop { from { transform: scale(.25) rotate(-18deg); opacity: 0; } 65% { transform: scale(1.25) rotate(5deg); } to { transform: none; opacity: 1; } }
+.overlay-rewards { margin: 10px 0 20px; padding: 10px 12px; border-radius: 14px; background: rgba(255, 255, 255, .045); border: 1px solid var(--line); text-align: left; color: var(--muted); font-size: 13px; line-height: 1.75; }
+.overlay-rewards div { display: flex; justify-content: space-between; gap: 12px; }
+.overlay-rewards b { color: var(--gold-hi); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.overlay-rewards .reward-total { margin-top: 4px; padding-top: 5px; border-top: 1px solid var(--line); color: var(--ink); font-weight: 700; }
 
 .overlay-actions { display: flex; gap: 10px; }
 
@@ -921,7 +939,14 @@ i.coin {
     <div class="overlay-card">
       <div class="overlay-kicker" id="ov-kicker">уровень пройден</div>
       <div class="overlay-title" id="ov-title">Отлично!</div>
+      <div class="overlay-stars" id="ov-stars" aria-label="Получено звёзд:"></div>
       <div class="overlay-stats" id="ov-stats"></div>
+      <div class="overlay-rewards" id="ov-rewards" role="list" aria-label="Награды за прохождение">
+        <div id="ov-grid-reward" role="listitem"></div>
+        <div id="ov-bonus-reward" role="listitem"></div>
+        <div id="ov-first-reward" role="listitem"></div>
+        <div class="reward-total" id="ov-total-reward" role="listitem"></div>
+      </div>
       <div class="overlay-actions">
         <button class="btn ghost" id="ov-home">К уровням</button>
         <button class="btn gold" id="ov-next">Дальше</button>
@@ -1633,6 +1658,10 @@ window.SK_DEFINITIONS = {
       bonus: uniqueStrings(raw.bonus),
       hinted: uniqueStrings(raw.hinted, item => /^\d+,\d+$/.test(item)),
       done: raw.done === true,
+      // Старые сохранения восстанавливают звёзды по уже сохранённым подсказкам и бонусам.
+      stars: raw.done === true
+        ? (Number.isInteger(raw.stars) && raw.stars >= 1 && raw.stars <= 3 ? raw.stars : starsFor(raw))
+        : 0,
     };
   }
 
@@ -1673,10 +1702,25 @@ window.SK_DEFINITIONS = {
     return s.levels[idx];
   }
 
+  function starsFor(levelState) {
+    const level = isRecord(levelState) ? levelState : {};
+    const usedHint = Array.isArray(level.hinted) && level.hinted.length > 0;
+    const foundBonus = Array.isArray(level.bonus) && level.bonus.length > 0;
+    return 1 + (usedHint ? 0 : 1) + (foundBonus ? 1 : 0);
+  }
+
+  function refreshStars(levelState) {
+    if (!isRecord(levelState) || levelState.done !== true) return;
+    levelState.stars = starsFor(levelState);
+    save();
+  }
+
   window.Store = {
     get state() { return load(); },
     save,
     level,
+    starsFor,
+    refreshStars,
     addCoins(n) {
       if (!Number.isFinite(n)) return;
       const s = load();
@@ -2242,6 +2286,7 @@ window.SK_DEFINITIONS = {
     wheel: null,
     targetMode: false,
     finished: false,
+    runRewards: null,
     coachAnim: null,   // анимация обучающего «пальца» (первый запуск)
   };
 
@@ -2330,6 +2375,7 @@ window.SK_DEFINITIONS = {
     Game.level = window.SK_LEVELS[idx];
     Game.saved = window.Store.level(idx);
     Game.finished = false;
+    Game.runRewards = { grid: 0, bonus: 0 };
     Game.targetMode = false;
     window.Combo.levelReset();
     $('#hint-target').classList.remove('armed');
@@ -2557,8 +2603,10 @@ window.SK_DEFINITIONS = {
         previewOut('dissolve');
       } else {
         Game.saved.bonus.push(word);
+        window.Store.refreshStars(Game.saved);
         window.Combo.grow();
         const reward = BONUS_REWARD * window.Combo.multiplier;
+        Game.runRewards.bonus += reward;
         window.Store.addCoins(reward);
         window.SFX.bonus();
         window.HAPTIC.ok();
@@ -2584,6 +2632,7 @@ window.SK_DEFINITIONS = {
     gridWord.found = true;
     Game.saved.found.push(gridWord.w);
     const reward = WORD_REWARD * window.Combo.multiplier;
+    Game.runRewards.grid += reward;
     window.Store.addCoins(reward);
     updateLevelProgress(true);
     updateHintButtons();
@@ -2634,6 +2683,7 @@ window.SK_DEFINITIONS = {
   function levelComplete() {
     const first = !Game.saved.done;
     Game.saved.done = true;
+    Game.saved.stars = window.Store.starsFor(Game.saved);
     if (first) window.Store.addCoins(WIN_REWARD);
     window.Store.save();
     window.SFX.win();
@@ -2647,11 +2697,33 @@ window.SK_DEFINITIONS = {
     const last = Game.idx + 1 >= window.SK_LEVELS.length;
     $('#ov-kicker').textContent = last ? 'игра пройдена' : replay ? 'уровень пройден ранее' : 'уровень пройден';
     $('#ov-title').textContent = last ? 'Триумф!' : ['Отлично!', 'Блестяще!', 'Превосходно!', 'Мастерски!'][Game.idx % 4];
+    const stars = Game.saved.stars || 1;
+    const starBox = $('#ov-stars');
+    starBox.innerHTML = '';
+    starBox.setAttribute('aria-label', 'Получено звёзд: ' + stars + ' из 3');
+    for (let i = 0; i < 3; i++) {
+      const star = document.createElement('span');
+      star.className = 'overlay-star' + (i < stars ? ' earned' : '');
+      star.textContent = '★';
+      star.setAttribute('aria-hidden', 'true');
+      if (i < stars) star.style.setProperty('--star-delay', (i * 120) + 'ms');
+      starBox.appendChild(star);
+    }
     const bonus = Game.saved.bonus.length;
-    $('#ov-stats').innerHTML =
-      'Слов: <b>' + Game.words.length + '</b>' +
-      (bonus ? ' &nbsp;·&nbsp; бонусных: <b>' + bonus + '</b>' : '') +
-      (rewarded ? ' &nbsp;·&nbsp; награда: <b>+' + WIN_REWARD + '</b>' : '');
+    $('#ov-stats').textContent = replay
+      ? 'Ранее получено: ' + stars + ' из 3 звёзд.'
+      : 'Получено: ' + stars + ' из 3 звёзд.';
+    const rewards = $('#ov-rewards');
+    rewards.hidden = replay;
+    if (!replay) {
+      const grid = Game.runRewards.grid;
+      const bonusReward = Game.runRewards.bonus;
+      const firstReward = rewarded ? WIN_REWARD : 0;
+      $('#ov-grid-reward').innerHTML = 'Слова сетки <b>+' + grid + '</b>';
+      $('#ov-bonus-reward').innerHTML = 'Бонусные слова (' + bonus + ') <b>+' + bonusReward + '</b>';
+      $('#ov-first-reward').innerHTML = 'За первое прохождение <b>+' + firstReward + '</b>';
+      $('#ov-total-reward').innerHTML = 'Итого за этот проход <b>+' + (grid + bonusReward + firstReward) + '</b>';
+    }
     $('#ov-next').textContent = last ? 'К уровням' : 'Дальше';
     $('#ov-home').hidden = last;
     ov.hidden = false;
@@ -2864,13 +2936,21 @@ window.SK_DEFINITIONS = {
       const st = window.Store.state.levels[i];
       const b = document.createElement('button');
       b.className = 'lvl' + (st && st.done ? ' done' : (st && st.found && st.found.length ? ' started' : ''));
-      b.textContent = i + 1;
+      b.append(document.createTextNode(i + 1));
+      const stars = st && st.done ? (st.stars || 1) : 0;
+      if (stars) {
+        const mark = document.createElement('span');
+        mark.className = 'lvl-stars';
+        mark.textContent = '★'.repeat(stars);
+        mark.setAttribute('aria-hidden', 'true');
+        b.appendChild(mark);
+      }
       const stateLabel = st && st.done
         ? 'пройден'
         : st && st.found && st.found.length
           ? 'найдено ' + st.found.length + ' из ' + level.w.length + ' слов'
           : 'не начат';
-      b.setAttribute('aria-label', 'Уровень ' + (i + 1) + ', ' + stateLabel);
+      b.setAttribute('aria-label', 'Уровень ' + (i + 1) + ', ' + stateLabel + (stars ? ', ' + stars + ' ' + (stars === 1 ? 'звезда' : 'звезды') : ''));
       b.addEventListener('click', () => {
         window.SFX.click();
         openLevel(i);

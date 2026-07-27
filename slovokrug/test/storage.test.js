@@ -91,6 +91,7 @@ test('normalizes malformed level values', () => {
         bonus: [],
         hinted: ['1,2'],
         done: false,
+        stars: 0,
       },
     },
   });
@@ -118,13 +119,52 @@ test('migrates old level saves with missing fields', () => {
     bonus: [],
     hinted: [],
     done: true,
+    stars: 2,
   });
   assert.deepEqual(snapshot(Store.level(4)), {
     found: [],
     bonus: [],
     hinted: [],
     done: false,
+    stars: 0,
   });
+});
+
+test('migrates a safe earned star count for completed levels', () => {
+  const { Store } = createStore(JSON.stringify({
+    levels: {
+      1: { found: ['мир'], bonus: ['рим'], hinted: [], done: true, stars: 3 },
+      2: { done: true, stars: 99 },
+      3: { done: false, stars: 2 },
+    },
+  }));
+
+  assert.equal(Store.level(1).stars, 3);
+  assert.equal(Store.level(2).stars, 2);
+  assert.equal(Store.level(3).stars, 0);
+  assert.equal(Store.level(4).stars, 0);
+});
+
+test('calculates completion stars from paid hints and bonus words', () => {
+  const { Store } = createStore(null);
+
+  assert.equal(Store.starsFor({ hinted: [], bonus: [] }), 2);
+  assert.equal(Store.starsFor({ hinted: ['1,2'], bonus: [] }), 1);
+  assert.equal(Store.starsFor({ hinted: [], bonus: ['мир'] }), 3);
+  assert.equal(Store.starsFor({ hinted: ['1,2'], bonus: ['мир'] }), 2);
+});
+
+test('updates earned stars after a completed level gains a bonus word later', () => {
+  const { Store, saved } = createStore(JSON.stringify({
+    levels: { 0: { found: ['кот'], bonus: [], hinted: [], done: true, stars: 2 } },
+  }));
+  const level = Store.level(0);
+
+  level.bonus.push('ток');
+  Store.refreshStars(level);
+
+  assert.equal(level.stars, 3);
+  assert.equal(JSON.parse(saved()).levels[0].stars, 3);
 });
 
 test('coin updates stay finite, integral, and non-negative', () => {

@@ -120,6 +120,7 @@
     wheel: null,
     targetMode: false,
     finished: false,
+    runRewards: null,
     coachAnim: null,   // анимация обучающего «пальца» (первый запуск)
   };
 
@@ -208,6 +209,7 @@
     Game.level = window.SK_LEVELS[idx];
     Game.saved = window.Store.level(idx);
     Game.finished = false;
+    Game.runRewards = { grid: 0, bonus: 0 };
     Game.targetMode = false;
     window.Combo.levelReset();
     $('#hint-target').classList.remove('armed');
@@ -435,8 +437,10 @@
         previewOut('dissolve');
       } else {
         Game.saved.bonus.push(word);
+        window.Store.refreshStars(Game.saved);
         window.Combo.grow();
         const reward = BONUS_REWARD * window.Combo.multiplier;
+        Game.runRewards.bonus += reward;
         window.Store.addCoins(reward);
         window.SFX.bonus();
         window.HAPTIC.ok();
@@ -462,6 +466,7 @@
     gridWord.found = true;
     Game.saved.found.push(gridWord.w);
     const reward = WORD_REWARD * window.Combo.multiplier;
+    Game.runRewards.grid += reward;
     window.Store.addCoins(reward);
     updateLevelProgress(true);
     updateHintButtons();
@@ -512,6 +517,7 @@
   function levelComplete() {
     const first = !Game.saved.done;
     Game.saved.done = true;
+    Game.saved.stars = window.Store.starsFor(Game.saved);
     if (first) window.Store.addCoins(WIN_REWARD);
     window.Store.save();
     window.SFX.win();
@@ -525,11 +531,33 @@
     const last = Game.idx + 1 >= window.SK_LEVELS.length;
     $('#ov-kicker').textContent = last ? 'игра пройдена' : replay ? 'уровень пройден ранее' : 'уровень пройден';
     $('#ov-title').textContent = last ? 'Триумф!' : ['Отлично!', 'Блестяще!', 'Превосходно!', 'Мастерски!'][Game.idx % 4];
+    const stars = Game.saved.stars || 1;
+    const starBox = $('#ov-stars');
+    starBox.innerHTML = '';
+    starBox.setAttribute('aria-label', 'Получено звёзд: ' + stars + ' из 3');
+    for (let i = 0; i < 3; i++) {
+      const star = document.createElement('span');
+      star.className = 'overlay-star' + (i < stars ? ' earned' : '');
+      star.textContent = '★';
+      star.setAttribute('aria-hidden', 'true');
+      if (i < stars) star.style.setProperty('--star-delay', (i * 120) + 'ms');
+      starBox.appendChild(star);
+    }
     const bonus = Game.saved.bonus.length;
-    $('#ov-stats').innerHTML =
-      'Слов: <b>' + Game.words.length + '</b>' +
-      (bonus ? ' &nbsp;·&nbsp; бонусных: <b>' + bonus + '</b>' : '') +
-      (rewarded ? ' &nbsp;·&nbsp; награда: <b>+' + WIN_REWARD + '</b>' : '');
+    $('#ov-stats').textContent = replay
+      ? 'Ранее получено: ' + stars + ' из 3 звёзд.'
+      : 'Получено: ' + stars + ' из 3 звёзд.';
+    const rewards = $('#ov-rewards');
+    rewards.hidden = replay;
+    if (!replay) {
+      const grid = Game.runRewards.grid;
+      const bonusReward = Game.runRewards.bonus;
+      const firstReward = rewarded ? WIN_REWARD : 0;
+      $('#ov-grid-reward').innerHTML = 'Слова сетки <b>+' + grid + '</b>';
+      $('#ov-bonus-reward').innerHTML = 'Бонусные слова (' + bonus + ') <b>+' + bonusReward + '</b>';
+      $('#ov-first-reward').innerHTML = 'За первое прохождение <b>+' + firstReward + '</b>';
+      $('#ov-total-reward').innerHTML = 'Итого за этот проход <b>+' + (grid + bonusReward + firstReward) + '</b>';
+    }
     $('#ov-next').textContent = last ? 'К уровням' : 'Дальше';
     $('#ov-home').hidden = last;
     ov.hidden = false;

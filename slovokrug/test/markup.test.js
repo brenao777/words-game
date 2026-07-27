@@ -35,6 +35,15 @@ test('completion overlay exposes dialog semantics', () => {
   assert.match(tag, /\baria-describedby="ov-stats"/);
 });
 
+test('completion overlay contains accessible stars and a reward breakdown', () => {
+  const stars = openingTag('ov-stars');
+  assert.match(stars, /\baria-label="Получено звёзд:"/);
+  assert.match(openingTag('ov-rewards'), /\brole="list"/);
+  for (const id of ['ov-grid-reward', 'ov-bonus-reward', 'ov-first-reward', 'ov-total-reward']) {
+    assert.ok(html.includes('id="' + id + '"'), 'missing reward row #' + id);
+  }
+});
+
 test('toggle controls expose their initial state', () => {
   assert.match(openingTag('home-sound'), /\baria-pressed="true"/);
   assert.match(openingTag('btn-sound'), /\baria-pressed="true"/);

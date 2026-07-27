@@ -85,7 +85,14 @@
     <div class="overlay-card">
       <div class="overlay-kicker" id="ov-kicker">уровень пройден</div>
       <div class="overlay-title" id="ov-title">Отлично!</div>
+      <div class="overlay-stars" id="ov-stars" aria-label="Получено звёзд:"></div>
       <div class="overlay-stats" id="ov-stats"></div>
+      <div class="overlay-rewards" id="ov-rewards" role="list" aria-label="Награды за прохождение">
+        <div id="ov-grid-reward" role="listitem"></div>
+        <div id="ov-bonus-reward" role="listitem"></div>
+        <div id="ov-first-reward" role="listitem"></div>
+        <div class="reward-total" id="ov-total-reward" role="listitem"></div>
+      </div>
       <div class="overlay-actions">
         <button class="btn ghost" id="ov-home">К уровням</button>
         <button class="btn gold" id="ov-next">Дальше</button>

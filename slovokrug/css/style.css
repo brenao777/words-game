@@ -249,6 +249,16 @@ i.coin {
   box-shadow: 0 4px 16px rgba(242, 182, 75, .22);
 }
 .lvl.done::after { display: none; }
+.lvl-stars {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  letter-spacing: -1px;
+  color: #3a2c10;
+  white-space: nowrap;
+}
 
 /* ============ Игровой экран ============ */
 
@@ -642,6 +652,14 @@ i.coin {
   margin: 8px 0 20px;
 }
 .overlay-stats b { color: var(--gold-hi); font-variant-numeric: tabular-nums; }
+.overlay-stars { min-height: 35px; margin: 4px 0 2px; font-size: 29px; letter-spacing: 3px; }
+.overlay-star { display: inline-block; color: rgba(255, 255, 255, .15); text-shadow: none; }
+.overlay-star.earned { color: var(--gold-hi); text-shadow: 0 0 16px rgba(242, 182, 75, .6); animation: star-pop .52s var(--spring) var(--star-delay) both; }
+@keyframes star-pop { from { transform: scale(.25) rotate(-18deg); opacity: 0; } 65% { transform: scale(1.25) rotate(5deg); } to { transform: none; opacity: 1; } }
+.overlay-rewards { margin: 10px 0 20px; padding: 10px 12px; border-radius: 14px; background: rgba(255, 255, 255, .045); border: 1px solid var(--line); text-align: left; color: var(--muted); font-size: 13px; line-height: 1.75; }
+.overlay-rewards div { display: flex; justify-content: space-between; gap: 12px; }
+.overlay-rewards b { color: var(--gold-hi); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.overlay-rewards .reward-total { margin-top: 4px; padding-top: 5px; border-top: 1px solid var(--line); color: var(--ink); font-weight: 700; }
 
 .overlay-actions { display: flex; gap: 10px; }
 
